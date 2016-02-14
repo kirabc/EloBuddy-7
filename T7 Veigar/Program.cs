@@ -35,29 +35,13 @@ namespace SoManyHoursSpentOnThisProject
         } //ready
         private static void OnLvlUp(Obj_AI_Base guy ,Obj_AI_BaseLevelUpEventArgs args)
         {
-      //      if (!guy.IsMe) return;
+     //     if(!guy.IsMe) return;
 /*Q>W>E*/   SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.W, SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.W, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.E, SpellSlot.E };
 /*Q>E>W*/   SpellSlot[] sequence2 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 /*E>Q>W*/   SpellSlot[] sequence3 = { SpellSlot.Unknown, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.E, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.Q, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 
             Player.LevelSpell(sequence1[myhero.Level]);
 
-/*          if (misc["autoS"].Cast<CheckBox>().CurrentValue)
-            {
-                switch (misc["lvlSpells"].Cast<ComboBox>().CurrentValue)
-                {
-                    case 0:
-                        Player.LevelSpell(sequence1[myhero.Level]);
-                        break;                                       
-                    case 1:
-                        Player.LevelSpell(sequence2[myhero.Level]);
-                        break;
-                    case 2:
-                        Player.LevelSpell(sequence3[myhero.Level]);
-                        break;
-                }
-            }
-             MULTIPLE SEQUENCES TO CHOOSE FROM COMING SOON*/
         } //ready
         private static void OnTick(EventArgs args)
         {
