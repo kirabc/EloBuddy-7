@@ -11,7 +11,7 @@ using SharpDX;
 using Color = System.Drawing.Color;
 
 
-namespace SoManyHoursSpentOnThisProject 
+namespace Kappa
 {
     class ΤοΠιλλ
     {
