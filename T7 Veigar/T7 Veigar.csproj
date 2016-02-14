@@ -8,8 +8,8 @@
     <ProjectGuid>{3B0CBC39-8F0B-4CBB-B73F-D81FEC2587FA}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Veigarino</RootNamespace>
-    <AssemblyName>Veigarino</AssemblyName>
+    <RootNamespace>Veigar</RootNamespace>
+    <AssemblyName>Veigar</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
