@@ -13,7 +13,7 @@ using Color = System.Drawing.Color;
 
 namespace HolaAtMe
 {
-    class ΤοΠιλλ
+    class ΤοΠιλλλ
     {
         private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
