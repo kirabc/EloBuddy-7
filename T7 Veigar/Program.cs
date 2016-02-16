@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using EloBuddy;
 using EloBuddy.SDK;
@@ -11,7 +11,7 @@ using SharpDX;
 using Color = System.Drawing.Color;
 
 
-namespace Kappa
+namespace HolaAtMe
 {
     class ΤοΠιλλ
     {
@@ -22,27 +22,25 @@ namespace Kappa
           
         public static void OnLoad(EventArgs arg)
         {
-            
+            DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
             Chat.Print("<font color='#0000FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.0)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
-           // Game.OnUpdate += OnUpdate;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             DatMenu();
             Game.OnTick += OnTick;
             
-        } //ready
+        } 
         private static void OnLvlUp(Obj_AI_Base guy ,Obj_AI_BaseLevelUpEventArgs args)
         {
-     //     if(!guy.IsMe) return;
+            if (!guy.IsMe) return;
 /*Q>W>E*/   SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.W, SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.W, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.E, SpellSlot.E };
 /*Q>E>W*/   SpellSlot[] sequence2 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 /*E>Q>W*/   SpellSlot[] sequence3 = { SpellSlot.Unknown, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.E, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.Q, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 
             Player.LevelSpell(sequence1[myhero.Level]);
-
-        } //ready
+        } 
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
@@ -61,7 +59,7 @@ namespace Kappa
 
             
             
-        } //ready
+        } 
         private static float ComboDMG(Obj_AI_Base target)
         {
             if (target != null)
@@ -76,124 +74,128 @@ namespace Kappa
                 return cdmg;
             }
             return 0;
-        } //ready
-        public static void Harass() //ready
-        {
-            DemSpells.Q.AllowedCollisionCount = 1;
+        } 
+        public static void Harass() 
+        {        
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-            var Qpred = DemSpells.Q.GetPrediction(target);
-            var Wpred = DemSpells.W.GetPrediction(target);
-            
-            if (harass["hQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && target.Distance(myhero) <= DemSpells.W.Range)
-            {
-                 switch(pred["Qh"].Cast<Slider>().CurrentValue)
-                 {
-                     case 1:
-                         if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
-                         break;
-                     case 2:
-                         if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
-                         break;
-                     case 3:
-                         if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
-                         break;
-                 }
-            }
 
-            if (harass["hW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && target.Distance(myhero) <= DemSpells.W.Range)
+            if (target != null)
             {
-                switch(harass["hWm"].Cast<Slider>().CurrentValue)
-                { 
-                    case 1:
-                        switch (pred["Wh"].Cast<Slider>().CurrentValue)
-                        {
-                            case 1:
-                                if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
-                                break;
-                            case 2:
-                                if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
-                                break;
-                            case 3:
-                                if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
-                                break;
-                        }
-                        break;
-                    case 2:
-                        DemSpells.W.Cast(target.Position);
-                        break;
-                    case 3:
-                        if (Wpred.HitChance == HitChance.Immobile || target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(Wpred.CastPosition);
-                        break;
-
+                if (harass["hQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target))
+                {
+                    var Qpred = DemSpells.Q.GetPrediction(target);
+                    switch (pred["Qh"].Cast<Slider>().CurrentValue)
+                    {
+                        case 1:
+                            if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
+                            break;
+                        case 2:
+                            if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
+                            break;
+                        case 3:
+                            if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
+                            break;
+                    }
                 }
-            }
-            
-            
-            
-        }
-        private static void Combo()
+
+                if (harass["hW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target))
+                {
+                    var Wpred = DemSpells.W.GetPrediction(target);
+                    switch (harass["hWm"].Cast<Slider>().CurrentValue)
+                    {
+                        case 1:
+                            switch (pred["Wh"].Cast<Slider>().CurrentValue)
+                            {
+                                case 1:
+                                    if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
+                                    break;
+                                case 2:
+                                    if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
+                                    break;
+                                case 3:
+                                    if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
+                                    break;
+                            }
+                            break;
+                        case 2:
+                            DemSpells.W.Cast(target.Position);
+                            break;
+                        case 3:
+                            if (Wpred.HitChance == HitChance.Immobile || target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(Wpred.CastPosition);
+                            break;
+
+                    }
+                }
+            }                 
+        } 
+        private static void Combo() 
         {
-            DemSpells.Q.AllowedCollisionCount = 1;
+           
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-            var Qpred = DemSpells.Q.GetPrediction(target);
-            var Wpred = DemSpells.W.GetPrediction(target);
+            
+            if(target != null)
+            { 
+                var Qpred = DemSpells.Q.GetPrediction(target);
+                var Wpred = DemSpells.W.GetPrediction(target);
 
-            if (combo["useQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.W.Range >= target.Distance(myhero))
-            {
-                switch (pred["Qh"].Cast<Slider>().CurrentValue)
-                {
-                    case 1:
-                        if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
-                        break;
-                    case 2:
-                        if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
-                        break;
-                    case 3:
-                        if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
-                        break;
-                }
-            }
-            if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && DemSpells.E.Range >= target.Distance(myhero) + 10)
-            {
-                switch (combo["Es"].Cast<CheckBox>().CurrentValue)
-                {
-                    case false:
-                        DemSpells.E.Cast(target.Position);
-                        break;
-                    case true:
-                        if (!target.HasBuffOfType(BuffType.Stun)) DemSpells.E.Cast(target.Position);
-                        break;
-                }
-            }
-            if (combo["useW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.Range >= target.Distance(myhero))
-            {
-                switch(combo["useWs"].Cast<CheckBox>().CurrentValue)
-                {
-                    case true:
-                        if (target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(target.Position);
-                        break;
-                    case false:
-                        switch (pred["Wh"].Cast<Slider>().CurrentValue)
-                        {
-                            case 1:
-                                if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
-                                break;
-                            case 2:
-                                if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
-                                break;
-                            case 3:
-                                if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
-                                break;
-                        }
-                        break;
-                        
-                }
-            }
-            if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() && DemSpells.R.Range >= target.Distance(myhero) && ComboDMG(target) > target.Health) DemSpells.R.Cast(target);
 
-            if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) > target.Health && ignt.Range >= target.Distance(myhero)) ignt.Cast(target);
+                if (combo["useQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target))
+                {
+                    switch (pred["Qh"].Cast<Slider>().CurrentValue)
+                    {
+                        case 1:
+                            if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
+                            break;
+                        case 2:
+                            if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
+                            break;
+                        case 3:
+                            if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
+                            break;
+                    }
+                }
+                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && DemSpells.E.IsInRange(target))
+                {
+                    switch (combo["Es"].Cast<CheckBox>().CurrentValue)
+                    {
+                        case false:
+                            DemSpells.E.Cast(target.Position);
+                            break;
+                        case true:
+                            if (!target.HasBuffOfType(BuffType.Stun)) DemSpells.E.Cast(target.Position);
+                            break;
+                    }
+                }
+                if (combo["useW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target))
+                {
+                    switch (combo["useWs"].Cast<CheckBox>().CurrentValue)
+                    {
+                        case true:
+                            if (target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(target.Position);
+                            break;
+                        case false:
+                            switch (pred["Wh"].Cast<Slider>().CurrentValue)
+                            {
+                                case 1:
+                                    if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
+                                    break;
+                                case 2:
+                                    if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
+                                    break;
+                                case 3:
+                                    if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
+                                    break;
+                            }
+                            break;
+                    }
+                }
+                if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() && DemSpells.R.IsInRange(target) && ComboDMG(target) > target.Health) DemSpells.R.Cast(target);
 
-        } //ready
+                if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) > target.Health && ignt.IsInRange(target)) ignt.Cast(target);
+            }
+
+
+        } 
         private static void Laneclear()
         {
             var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position,DemSpells.W.Range).OrderBy(a => a.Health);
@@ -212,7 +214,7 @@ namespace Kappa
                 if (Wpred.HitNumber >= laneclear["Wmm"].Cast<Slider>().CurrentValue) DemSpells.W.Cast(Wpred.CastPosition);
 
             }      
-        } //ready
+        } 
         private static void Misc()
         {
             if (misc["sh"].Cast<CheckBox>().CurrentValue)
@@ -221,11 +223,12 @@ namespace Kappa
             }
 
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-            var Qpred = DemSpells.Q.GetPrediction(target);
-            var Wpred = DemSpells.W.GetPrediction(target);
 
             if (target != null)
             {
+                var Qpred = DemSpells.Q.GetPrediction(target);
+                var Wpred = DemSpells.W.GetPrediction(target);
+
                 if (misc["ksQ"].Cast<CheckBox>().CurrentValue && myhero.GetSpellDamage(target, SpellSlot.Q) > target.Health && target.Distance(myhero) < DemSpells.W.Range && DemSpells.Q.IsReady() && !target.IsInvulnerable)
                 {
                     if (target.HasBuffOfType(BuffType.Stun)) DemSpells.Q.Cast(target.Position);
@@ -247,17 +250,15 @@ namespace Kappa
                 }
                 if (misc["ksW"].Cast<CheckBox>().CurrentValue && myhero.GetSpellDamage(target, SpellSlot.W) > target.Health && target.Distance(myhero) < DemSpells.W.Range && DemSpells.W.IsReady() && !target.IsInvulnerable)
                 {
+
                     if (Wpred.HitChance == HitChance.Immobile || Wpred.HitChance >= HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
                 }
-                if (misc["ksR"].Cast<CheckBox>().CurrentValue && myhero.GetSpellDamage(target, SpellSlot.R) > target.Health && DemSpells.R.Range >= target.Distance(myhero) && DemSpells.R.IsReady()) DemSpells.R.Cast(target);
-
             }
                         
         }
         private static void OnDraw(EventArgs args)
         {
-            var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-            
+         
             if (draw["drawQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
@@ -296,25 +297,11 @@ namespace Kappa
 
             if (draw["drawAA"].Cast<CheckBox>().CurrentValue && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue) Drawing.DrawCircle(myhero.Position, myhero.AttackRange, Color.White); 
 
-            var tp = Drawing.WorldToScreen(target.Position); 
-
-            if (draw["drawT"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
+            foreach (var enemy in EntityManager.Heroes.Enemies)
             {
-                switch (draw["DrawTm"].Cast<Slider>().CurrentValue)
-                {
-                    case 1:
-                        Drawing.DrawCircle(TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position).Position, 50, Color.Gold);
-                        break;
-                    case 2:
-                        Drawing.DrawText(tp.X,tp.Y, Color.Gold, "Target");
-                        break;
-                }
+                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, ComboDMG(enemy) > enemy.Health ? Color.Green : Color.Transparent, "Killable");
             }
-            foreach (var enemie in EntityManager.Heroes.Enemies)
-            {
-                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && ComboDMG(enemie) > enemie.Health) Drawing.DrawText(Drawing.WorldToScreen(TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position).Position).X, Drawing.WorldToScreen(TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position).Position).Y - 30, ComboDMG(enemie) > enemie.Health ? Color.Green : Color.Transparent, "Killable");
-            }
-        }
+        } 
         private static void DatMenu()
         {
 
@@ -339,8 +326,8 @@ namespace Kappa
             combo.Add("useR", new CheckBox("Use R in Combo",true));
             combo.Add("igntC", new CheckBox("Use Ignite", false));
             combo.AddSeparator();
-            combo.Add("Es", new CheckBox("Dont Use E On Immobile Enemies",false));
-            combo.Add("useWs", new CheckBox("Use W Only On Stunned Enemies", false));
+            combo.Add("Es", new CheckBox("Dont Use E On Immobile Enemies",true));
+            combo.Add("useWs", new CheckBox("Use W Only On Stunned Enemies", true));
             
  
             harass.AddGroupLabel("Spells");
@@ -373,7 +360,6 @@ namespace Kappa
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q",true)); 
-           // laneclear.Add("Qlh", new CheckBox("Only Use Q To LastHit", false));
             laneclear.Add("LW", new CheckBox("Use W",false));
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Min W Minions");
@@ -394,34 +380,16 @@ namespace Kappa
             draw.Add("drawE", new CheckBox("Draw E Range",true));
             draw.Add("drawR", new CheckBox("Draw R Range",true));
             draw.Add("drawAA", new CheckBox("Draw AA Range",false));
-          //draw.Add("drawDmg", new CheckBox("Draw Combo Damage")); TODO  
             draw.Add("drawk", new CheckBox("Draw Killable Enemies",false));
             draw.Add("nodrawc", new CheckBox("Draw Only Ready Spells",false));
-            draw.Add("drawT", new CheckBox("Draw Target",false));
-            draw.AddSeparator();
-            draw.AddGroupLabel("Draw Target Mode");
-            var Tsl = draw.Add("drawTm", new Slider("Select Mode", 1, 1, 2));
-            Tsl.OnValueChange += (s, cargs) =>
-            {
-                switch (cargs.NewValue)
-                {
-                    case 1:
-                        Tsl.DisplayName = "Circle";
-                        return;
-                    case 2:
-                        Tsl.DisplayName = "Text";
-                        return;
-                }
-            };
 
             misc.Add("ksQ", new CheckBox("Killsteal with Q"));
             misc.Add("ksW", new CheckBox("Killsteal with W(With Prediction)"));
-            misc.Add("ksR", new CheckBox("Killsteal with R"));
-            misc.Add("ksI", new CheckBox("Killsteal With Ignite", false));
             misc.AddSeparator();
             misc.AddGroupLabel("Auto Level Up Spells");
             misc.Add("autoS",new CheckBox("Activate Auto Level Up Spells",true));
-            misc.Add("lvlSpells", new ComboBox("Choose Sequence" , 0 , "Q>W>E"/*"Q>E>W","E>Q>W"*/));
+            misc.Add("lvlSpells", new ComboBox("Choose Sequence" , 0 , "Q>W>E"));
+            misc.Add("lolKappa",new CheckBox("More Sequences Coming Soon!",false));
             misc.AddSeparator();
             misc.AddGroupLabel("Skin Hack");
             misc.Add("sh", new CheckBox("Activate Skin hack"));
@@ -475,12 +443,10 @@ namespace Kappa
 
         static DemSpells()
         {
-
             Q = new Spell.Skillshot(SpellSlot.Q, 950, SkillShotType.Linear, 250, 2000, 70);
             W = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Circular, 1350, 0, 225);
             E = new Spell.Skillshot(SpellSlot.E, 700, SkillShotType.Circular, 500, 0, 425);
             R = new Spell.Targeted(SpellSlot.R, 650);
         }
     }
-
 }
