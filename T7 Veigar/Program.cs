@@ -11,9 +11,9 @@ using SharpDX;
 using Color = System.Drawing.Color;
 
 
-namespace HolaAtMe
+namespace SoManyHoursSpentOnThisProject 
 {
-    class ΤοΠιλλλ
+    class ΤοΠιλλ
     {
         private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
@@ -24,7 +24,7 @@ namespace HolaAtMe
         {
             DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0000FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.0)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.1)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -39,7 +39,7 @@ namespace HolaAtMe
 /*Q>E>W*/   SpellSlot[] sequence2 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 /*E>Q>W*/   SpellSlot[] sequence3 = { SpellSlot.Unknown, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.E, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.Q, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 
-            Player.LevelSpell(sequence1[myhero.Level]);
+            if(misc["autoS"].Cast<CheckBox>().CurrentValue) Player.LevelSpell(sequence1[myhero.Level]);
         } 
         private static void OnTick(EventArgs args)
         {
@@ -53,13 +53,12 @@ namespace HolaAtMe
 
             if (laneclear["AutoL"].Cast<CheckBox>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) Laneclear();
 
+            if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) QStack();
+                
             if (Orbwalker.ActiveModesFlags == Orbwalker.ActiveModes.Harass && myhero.ManaPercent >= harass["minMH"].Cast<Slider>().CurrentValue) Harass();
 
             if (harass["autoH"].Cast<CheckBox>().CurrentValue && myhero.ManaPercent > harass["minMH"].Cast<Slider>().CurrentValue) Harass();
-
-            
-            
-        } 
+        }
         private static float ComboDMG(Obj_AI_Base target)
         {
             if (target != null)
@@ -84,15 +83,15 @@ namespace HolaAtMe
                 if (harass["hQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target))
                 {
                     var Qpred = DemSpells.Q.GetPrediction(target);
-                    switch (pred["Qh"].Cast<Slider>().CurrentValue)
+                    switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
                     {
-                        case 1:
+                        case 0:
                             if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
                             break;
-                        case 2:
+                        case 1:
                             if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
                             break;
-                        case 3:
+                        case 2:
                             if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
                             break;
                     }
@@ -101,26 +100,26 @@ namespace HolaAtMe
                 if (harass["hW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target))
                 {
                     var Wpred = DemSpells.W.GetPrediction(target);
-                    switch (harass["hWm"].Cast<Slider>().CurrentValue)
+                    switch (harass["hWm"].Cast<ComboBox>().CurrentValue)
                     {
-                        case 1:
-                            switch (pred["Wh"].Cast<Slider>().CurrentValue)
+                        case 0:
+                            switch (pred["Whit"].Cast<ComboBox>().CurrentValue)
                             {
-                                case 1:
+                                case 0:
                                     if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
                                     break;
-                                case 2:
+                                case 1:
                                     if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
                                     break;
-                                case 3:
+                                case 2:
                                     if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
                                     break;
                             }
                             break;
-                        case 2:
+                        case 1:
                             DemSpells.W.Cast(target.Position);
                             break;
-                        case 3:
+                        case 2:
                             if (Wpred.HitChance == HitChance.Immobile || target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(Wpred.CastPosition);
                             break;
 
@@ -138,18 +137,17 @@ namespace HolaAtMe
                 var Qpred = DemSpells.Q.GetPrediction(target);
                 var Wpred = DemSpells.W.GetPrediction(target);
 
-
                 if (combo["useQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target))
                 {
-                    switch (pred["Qh"].Cast<Slider>().CurrentValue)
+                    switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
                     {
-                        case 1:
+                        case 0:
                             if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
                             break;
-                        case 2:
+                        case 1:
                             if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
                             break;
-                        case 3:
+                        case 2:
                             if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
                             break;
                     }
@@ -174,15 +172,15 @@ namespace HolaAtMe
                             if (target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(target.Position);
                             break;
                         case false:
-                            switch (pred["Wh"].Cast<Slider>().CurrentValue)
+                            switch (pred["Whit"].Cast<ComboBox>().CurrentValue)
                             {
-                                case 1:
+                                case 0:
                                     if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
                                     break;
-                                case 2:
+                                case 1:
                                     if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
                                     break;
-                                case 3:
+                                case 2:
                                     if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
                                     break;
                             }
@@ -193,26 +191,43 @@ namespace HolaAtMe
 
                 if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) > target.Health && ignt.IsInRange(target)) ignt.Cast(target);
             }
-
-
         } 
+        private static void QStack()
+        {
+            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q));
+            var FarmPred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(farm, DemSpells.Q.Width, (int)DemSpells.Q.Range);
+
+            switch (laneclear["Qlm"].Cast<ComboBox>().CurrentValue)
+            {
+                case 0:
+                    if (FarmPred.HitNumber >= 1) DemSpells.Q.Cast(FarmPred.CastPosition);
+                    break;
+                case 1:
+                    if (FarmPred.HitNumber == 2) DemSpells.Q.Cast(FarmPred.CastPosition);
+                    break;
+                case 2:
+                    var BigMinions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.BaseSkinName.Contains("Siege") && x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q));
+                    var BMpred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(BigMinions, DemSpells.Q.Width, (int)DemSpells.Q.Range);
+                    if (BMpred.HitNumber == 1) DemSpells.Q.Cast(BMpred.CastPosition);
+                    break;
+            }
+        }
         private static void Laneclear()
         {
-            var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position,DemSpells.W.Range).OrderBy(a => a.Health);
+            var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range);
 
-            if (laneclear["LQ"].Cast<CheckBox>().CurrentValue  && DemSpells.Q.IsReady())
-            {
-               var Qpred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(minion, DemSpells.Q.Width, (int)DemSpells.Q.Range);
+            if (laneclear["LQ"].Cast<CheckBox>().CurrentValue  && DemSpells.Q.IsReady() && !laneclear["Qlk"].Cast<KeyBind>().CurrentValue)
+            {             
+                   var Qpred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(minion, DemSpells.Q.Width, (int)DemSpells.Q.Range);
 
-               if (Qpred.HitNumber >= 1) DemSpells.Q.Cast(Qpred.CastPosition);
-
+                   if (Qpred.HitNumber >= 1) DemSpells.Q.Cast(Qpred.CastPosition);
             }
+
             if (laneclear["LW"].Cast<CheckBox>().CurrentValue && minion != null && DemSpells.W.IsReady())
             {
                 var Wpred = EntityManager.MinionsAndMonsters.GetCircularFarmLocation(minion, DemSpells.W.Width, (int)DemSpells.W.Range);
 
                 if (Wpred.HitNumber >= laneclear["Wmm"].Cast<Slider>().CurrentValue) DemSpells.W.Cast(Wpred.CastPosition);
-
             }      
         } 
         private static void Misc()
@@ -234,15 +249,15 @@ namespace HolaAtMe
                     if (target.HasBuffOfType(BuffType.Stun)) DemSpells.Q.Cast(target.Position);
                     else
                     {
-                        switch (pred["Qh"].Cast<Slider>().CurrentValue)
+                        switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
                         {
-                            case 1:
+                            case 0:
                                 if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
                                 break;
-                            case 2:
+                            case 1:
                                 if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
                                 break;
-                            case 3:
+                            case 2:
                                 if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
                                 break;
                         }
@@ -299,8 +314,10 @@ namespace HolaAtMe
 
             foreach (var enemy in EntityManager.Heroes.Enemies)
             {
-                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, ComboDMG(enemy) > enemy.Health ? Color.Green : Color.Transparent, "Killable");
+                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, ComboDMG(enemy) > enemy.Health ? Color.Green : Color.Transparent, "Killable");
             }
+
+            Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10 ,Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
         } 
         private static void DatMenu()
         {
@@ -329,27 +346,11 @@ namespace HolaAtMe
             combo.Add("Es", new CheckBox("Dont Use E On Immobile Enemies",true));
             combo.Add("useWs", new CheckBox("Use W Only On Stunned Enemies", true));
             
- 
             harass.AddGroupLabel("Spells");
             harass.Add("hQ", new CheckBox("Use Q",true));
             harass.Add("hW", new CheckBox("Use W",false));
             harass.AddGroupLabel("W Mode:");
-            var Wm = harass.Add("hWm", new Slider("Select Mode", 1, 1, 3));
-            Wm.OnValueChange += (s, cargs) =>
-            {
-                switch (cargs.NewValue)
-                {
-                    case 1:
-                        Wm.DisplayName = "With Prediction";
-                        return;
-                    case 2:
-                        Wm.DisplayName = "Without Prediction(Not recommended)";
-                        return;
-                    case 3:
-                        Wm.DisplayName = "Only On Stunned Enemies";
-                        return;
-                }
-            };
+            harass.Add("hWm", new ComboBox("Select Mode",2,"With Prediciton","Without Prediction(Not Recommended)","Only On Stunned Enemies"));
             harass.AddSeparator();
             harass.AddGroupLabel("Min Mana To Harass");
             harass.Add("minMH", new Slider("Stop Harass At % Mana", 40, 0, 100));
@@ -357,10 +358,13 @@ namespace HolaAtMe
             harass.AddGroupLabel("Auto Harass");
             harass.Add("autoH", new CheckBox(" Use Auto harass", false));
 
-
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q",true)); 
             laneclear.Add("LW", new CheckBox("Use W",false));
+            laneclear.AddSeparator();
+            laneclear.AddGroupLabel("Q Stacking");
+            laneclear.Add("Qlk", new KeyBind("Auto Stacking",true,KeyBind.BindTypes.PressToggle,'F'));
+            laneclear.Add("Qlm",new ComboBox("Select Mode",1,"LastHit 1 Minion","LastHit 2 Minions","LastHit Only Big Minions"));
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Min W Minions");
             laneclear.Add("Wmm", new Slider("Min minions to use W", 2, 1, 6));
@@ -368,8 +372,9 @@ namespace HolaAtMe
             laneclear.AddGroupLabel("Stop Laneclear At % Mana");
             laneclear.Add("LcM", new Slider("%", 50, 0, 100));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Auto Harass");
+            laneclear.AddGroupLabel("Auto Laneclear");
             laneclear.Add("AutoL", new CheckBox("Auto Laneclear", false));
+            
 
             
 
@@ -397,40 +402,11 @@ namespace HolaAtMe
 
 
             pred.AddGroupLabel("Q HitChance");
-            var Qh = pred.Add("Qh", new Slider("Select Hitchance", 2, 1, 3));
-            Qh.OnValueChange += (s, cargs) =>
-            {
-                switch (cargs.NewValue)
-                {
-                    case 1:
-                        Qh.DisplayName = "Low";
-                        return;
-                    case 2:
-                        Qh.DisplayName = "Medium";
-                        return;
-                    case 3:
-                        Qh.DisplayName = "High";
-                        return;
-                }
-            };
+            pred.Add("Qhit",new ComboBox("Selecte Hitchance",1,"Low","Medium","High"));
             pred.AddSeparator();
             pred.AddGroupLabel("W HitChance");
-            var Wh = pred.Add("Wh", new Slider("Select Hitchance", 2, 1, 3));
-            Wh.OnValueChange += (s, cargs) =>
-            {
-                switch (cargs.NewValue)
-                {
-                    case 1:
-                        Wh.DisplayName = "Low";
-                        return;
-                    case 2:
-                        Wh.DisplayName = "Medium";
-                        return;
-                    case 3:
-                        Wh.DisplayName = "High";
-                        return;
-                }
-            };    
+            pred.Add("Whit", new ComboBox("Selecte Hitchance", 1, "Low", "Medium", "High"));
+                
         }          
     }
 
