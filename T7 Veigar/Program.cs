@@ -10,8 +10,7 @@ using EloBuddy.SDK.Rendering;
 using SharpDX;
 using Color = System.Drawing.Color;
 
-
-namespace SoManyHoursSpentOnThisProject 
+namespace Veigarino
 {
     class ΤοΠιλλ
     {
@@ -46,18 +45,33 @@ namespace SoManyHoursSpentOnThisProject
             if (myhero.IsDead) return;
 
             Misc();
-            
-            if (Orbwalker.ActiveModesFlags == Orbwalker.ActiveModes.Combo) Combo();
+      //      var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
+      //      Chat.Print(UltDamage(target));
+      //      Chat.Print(target.HealthPercent);
+          //  Chat.Print(target.FlatMagicDamageMod);
+//Chat.Print(myhero.FlatMagicDamageMod);
+            var flags = Orbwalker.ActiveModesFlags;
 
-            if (Orbwalker.ActiveModesFlags == Orbwalker.ActiveModes.LaneClear && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent ) Laneclear();
+            if (flags.HasFlag(Orbwalker.ActiveModes.Combo))
+            {
+                Combo();
+            }
 
-            if (laneclear["AutoL"].Cast<CheckBox>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) Laneclear();
+            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) || harass["autoH"].Cast<CheckBox>().CurrentValue && myhero.ManaPercent > harass["minMH"].Cast<Slider>().CurrentValue)
+            {
+                Harass();
+            }
+            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) || laneclear["AutoL"].Cast<CheckBox>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent)
+            {
+                Laneclear();
+            }
 
-            if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) QStack();
-                
-            if (Orbwalker.ActiveModesFlags == Orbwalker.ActiveModes.Harass && myhero.ManaPercent >= harass["minMH"].Cast<Slider>().CurrentValue) Harass();
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) || laneclear["AutoL"].Cast<CheckBox>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent)
+            {
+                Laneclear();
+            }
 
-            if (harass["autoH"].Cast<CheckBox>().CurrentValue && myhero.ManaPercent > harass["minMH"].Cast<Slider>().CurrentValue) Harass();
+            if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) QStack();              
         }
         private static float ComboDMG(Obj_AI_Base target)
         {
@@ -65,15 +79,24 @@ namespace SoManyHoursSpentOnThisProject
             {
                 float cdmg = 0;
 
-                if (DemSpells.Q.IsReady()) { cdmg = cdmg + myhero.GetSpellDamage(target, SpellSlot.Q); }
-                if (DemSpells.W.IsReady()) { cdmg = cdmg + myhero.GetSpellDamage(target, SpellSlot.W); }
-                if (DemSpells.R.IsReady()) { cdmg = cdmg + myhero.GetSpellDamage(target, SpellSlot.R); }
+                if (DemSpells.Q.IsReady() && combo["useQ"].Cast<CheckBox>().CurrentValue) { cdmg += myhero.GetSpellDamage(target, SpellSlot.Q); }
+                if (DemSpells.W.IsReady() && combo["useW"].Cast<CheckBox>().CurrentValue) { cdmg += myhero.GetSpellDamage(target, SpellSlot.W); }
+                if (DemSpells.R.IsReady() && combo["useR"].Cast<CheckBox>().CurrentValue) { cdmg += UltDamage(target); }
 
-                if (ignt.Slot != SpellSlot.Unknown && ignt.IsReady()) { cdmg = cdmg + myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite); }
+           //     if (ignt.Slot != SpellSlot.Unknown && ignt.IsReady() && combo["igntC"].Cast<CheckBox>().CurrentValue) { cdmg += myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite); }
                 return cdmg;
             }
             return 0;
         } 
+
+        private static float UltDamage(Obj_AI_Base target)
+        {
+            var level = DemSpells.R.Level - 1;           
+
+            var damage = new float[] { 175, 250, 325 }[level] + (((100 - target.HealthPercent) * 1.5) / 100) * new float[] { 175, 250, 325 }[level] +
+                            0.75 * myhero.FlatMagicDamageMod;
+            return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)damage);                  
+        }
         public static void Harass() 
         {        
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
@@ -152,7 +175,7 @@ namespace SoManyHoursSpentOnThisProject
                             break;
                     }
                 }
-                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && DemSpells.E.IsInRange(target))
+                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && target.Distance(myhero) < DemSpells.E.Range - 30 && DemSpells.Q.IsOnCooldown)
                 {
                     switch (combo["Es"].Cast<CheckBox>().CurrentValue)
                     {
@@ -187,28 +210,29 @@ namespace SoManyHoursSpentOnThisProject
                             break;
                     }
                 }
-                if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() && DemSpells.R.IsInRange(target) && ComboDMG(target) > target.Health) DemSpells.R.Cast(target);
+                if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() && DemSpells.R.IsInRange(target) && ComboDMG(target) > target.Health && UltDamage(target) > target.Health) DemSpells.R.Cast(target);
 
-                if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) > target.Health && ignt.IsInRange(target)) ignt.Cast(target);
+                if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) > target.Health && ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target,DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
             }
         } 
         private static void QStack()
         {
-            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q));
+            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy,myhero.Position, DemSpells.W.Range).Where(x => x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q) - 25 && x.IsValidTarget() && x.Distance(myhero) < DemSpells.Q.Range - 10);
+                                                                                                                                                                                                                              
             var FarmPred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(farm, DemSpells.Q.Width, (int)DemSpells.Q.Range);
 
             switch (laneclear["Qlm"].Cast<ComboBox>().CurrentValue)
             {
                 case 0:
-                    if (FarmPred.HitNumber >= 1) DemSpells.Q.Cast(FarmPred.CastPosition);
+                    if (FarmPred.HitNumber >= 1 && !Orbwalker.IsAutoAttacking) DemSpells.Q.Cast(FarmPred.CastPosition);
                     break;
                 case 1:
-                    if (FarmPred.HitNumber == 2) DemSpells.Q.Cast(FarmPred.CastPosition);
+                    if (FarmPred.HitNumber == 2 && !Orbwalker.IsAutoAttacking) DemSpells.Q.Cast(FarmPred.CastPosition);
                     break;
                 case 2:
-                    var BigMinions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.BaseSkinName.Contains("Siege") && x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q));
+                    var BigMinions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.BaseSkinName.Contains("Siege") || x.BaseSkinName.Contains("Super") && x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q)- 20);
                     var BMpred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(BigMinions, DemSpells.Q.Width, (int)DemSpells.Q.Range);
-                    if (BMpred.HitNumber == 1) DemSpells.Q.Cast(BMpred.CastPosition);
+                    if (BMpred.HitNumber == 1 && !Orbwalker.IsAutoAttacking) DemSpells.Q.Cast(BMpred.CastPosition);
                     break;
             }
         }
@@ -268,6 +292,8 @@ namespace SoManyHoursSpentOnThisProject
 
                     if (Wpred.HitChance == HitChance.Immobile || Wpred.HitChance >= HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
                 }
+
+                if (misc["ksR"].Cast<CheckBox>().CurrentValue && UltDamage(target) > target.Health && DemSpells.R.IsInRange(target) && DemSpells.R.IsReady() && !target.IsInvulnerable) DemSpells.R.Cast(target);
             }
                         
         }
@@ -314,7 +340,8 @@ namespace SoManyHoursSpentOnThisProject
 
             foreach (var enemy in EntityManager.Heroes.Enemies)
             {
-                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, ComboDMG(enemy) > enemy.Health ? Color.Green : Color.Transparent, "Killable");
+                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDMG(enemy) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Killable With Combo");
+                else if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDMG(enemy) + myhero.GetSummonerSpellDamage(enemy,DamageLibrary.SummonerSpells.Ignite) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Combo + Ignite");
             }
 
             Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10 ,Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
@@ -388,13 +415,13 @@ namespace SoManyHoursSpentOnThisProject
             draw.Add("drawk", new CheckBox("Draw Killable Enemies",false));
             draw.Add("nodrawc", new CheckBox("Draw Only Ready Spells",false));
 
-            misc.Add("ksQ", new CheckBox("Killsteal with Q"));
-            misc.Add("ksW", new CheckBox("Killsteal with W(With Prediction)"));
+            misc.Add("ksQ", new CheckBox("Killsteal with Q",false));
+            misc.Add("ksW", new CheckBox("Killsteal with W(With Prediction)",false));
+            misc.Add("ksR", new CheckBox("Killsteal with R",false));
             misc.AddSeparator();
             misc.AddGroupLabel("Auto Level Up Spells");
             misc.Add("autoS",new CheckBox("Activate Auto Level Up Spells",true));
-            misc.Add("lvlSpells", new ComboBox("Choose Sequence" , 0 , "Q>W>E"));
-            misc.Add("lolKappa",new CheckBox("More Sequences Coming Soon!",false));
+    //        misc.Add("lvlSpells", new ComboBox("Choose Sequence" , 0 , "Q>W>E"));
             misc.AddSeparator();
             misc.AddGroupLabel("Skin Hack");
             misc.Add("sh", new CheckBox("Activate Skin hack"));
