@@ -344,8 +344,18 @@ namespace Veigarino
                 else if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDMG(enemy) + myhero.GetSummonerSpellDamage(enemy,DamageLibrary.SummonerSpells.Ignite) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Combo + Ignite");
             }
 
-            Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10 ,Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
+            if (draw["drawStacks"].Cast<CheckBox>().CurrentValue)
+            {
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10, Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
+            }
+
+            if(draw["drawStackCount"].Cast<CheckBox>().CurrentValue)
+            {
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 25, Drawing.WorldToScreen(myhero.Position).Y + 25, Color.Red, "Count: " + myhero.GetBuffCount("veigarphenomenalevilpower").ToString());
+            }
+
         }
+
         private static void OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
         {
             if (sender != null && sender.IsEnemy && DemSpells.E.IsInRange(sender) && DemSpells.E.IsReady() && sender.IsValidTarget() && misc["gapmode"].Cast<ComboBox>().CurrentValue != 0)
@@ -431,6 +441,8 @@ namespace Veigarino
             draw.Add("drawAA", new CheckBox("Draw AA Range",false));
             draw.Add("drawk", new CheckBox("Draw Killable Enemies",false));
             draw.Add("nodrawc", new CheckBox("Draw Only Ready Spells",false));
+            draw.Add("drawStacks", new CheckBox("Draw Auto Stack Mode", true));
+            draw.Add("drawStackCount", new CheckBox("Draw Stack Count", false));
 
             misc.AddGroupLabel("Killsteal");
             misc.Add("ksQ", new CheckBox("Killsteal with Q",false));
@@ -438,7 +450,7 @@ namespace Veigarino
             misc.Add("ksR", new CheckBox("Killsteal with R",false));
             misc.Add("autoing", new CheckBox("Auto Ignite If Killable", false));
             misc.AddGroupLabel("Gapcloser");
-            misc.Add("gapmode", new ComboBox("Use E On Gapcloser                                    Mode:", 0, "Off","Self","Enemy(Pred)"));
+            misc.Add("gapmode", new ComboBox("Use E On Gapcloser                                               Mode:", 2, "Off","Self","Enemy(Pred)"));
             misc.AddSeparator();
             misc.AddGroupLabel("Auto Level Up Spells");
             misc.Add("autoS",new CheckBox("Activate Auto Level Up Spells",true));
