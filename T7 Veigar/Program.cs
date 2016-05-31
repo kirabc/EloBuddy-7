@@ -18,15 +18,16 @@ namespace Veigarino
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu,combo,harass,laneclear,misc,draw,pred,sequence1,sequence2,sequence3;
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
-          
+
         public static void OnLoad(EventArgs arg)
         {
             DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.1)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.3)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
+            Gapcloser.OnGapcloser += OnGapcloser;
             DatMenu();
             Game.OnTick += OnTick;
             
@@ -45,11 +46,7 @@ namespace Veigarino
             if (myhero.IsDead) return;
 
             Misc();
-      //      var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-      //      Chat.Print(UltDamage(target));
-      //      Chat.Print(target.HealthPercent);
-          //  Chat.Print(target.FlatMagicDamageMod);
-//Chat.Print(myhero.FlatMagicDamageMod);
+
             var flags = Orbwalker.ActiveModesFlags;
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo))
@@ -88,13 +85,12 @@ namespace Veigarino
             }
             return 0;
         } 
-
         private static float UltDamage(Obj_AI_Base target)
         {
             var level = DemSpells.R.Level - 1;           
 
             var damage = new float[] { 175, 250, 325 }[level] + (((100 - target.HealthPercent) * 1.5) / 100) * new float[] { 175, 250, 325 }[level] +
-                            0.75 * myhero.FlatMagicDamageMod;
+                0.75 * myhero.FlatMagicDamageMod;
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)damage);                  
         }
         public static void Harass() 
@@ -175,7 +171,7 @@ namespace Veigarino
                             break;
                     }
                 }
-                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && target.Distance(myhero) < DemSpells.E.Range - 30 && DemSpells.Q.IsOnCooldown)
+                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && target.Distance(myhero) < DemSpells.E.Range - 30)
                 {
                     switch (combo["Es"].Cast<CheckBox>().CurrentValue)
                     {
@@ -217,7 +213,7 @@ namespace Veigarino
         } 
         private static void QStack()
         {
-            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy,myhero.Position, DemSpells.W.Range).Where(x => x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q) - 25 && x.IsValidTarget() && x.Distance(myhero) < DemSpells.Q.Range - 10);
+            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => Prediction.Health.GetPrediction(x, DemSpells.Q.CastDelay ) < (myhero.GetSpellDamage(x, SpellSlot.Q) - 20) && x.IsValidTarget() && x.Distance(myhero) < DemSpells.Q.Range - 10);
                                                                                                                                                                                                                               
             var FarmPred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(farm, DemSpells.Q.Width, (int)DemSpells.Q.Range);
 
@@ -294,19 +290,23 @@ namespace Veigarino
                 }
 
                 if (misc["ksR"].Cast<CheckBox>().CurrentValue && UltDamage(target) > target.Health && DemSpells.R.IsInRange(target) && DemSpells.R.IsReady() && !target.IsInvulnerable) DemSpells.R.Cast(target);
+
+                if (misc["autoing"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
             }
                         
         }
         private static void OnDraw(EventArgs args)
         {
-         
+
+            var color = new ColorBGRA(48, 123, 243, 1);
+            var colorc = new ColorBGRA(48, 123, 243, 0);
             if (draw["drawQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
-                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range,DemSpells.Q.IsOnCooldown ? Color.Transparent:Color.SkyBlue); }
+                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range, DemSpells.Q.IsOnCooldown ? Color.Transparent : Color.SkyBlue); }
 
                 else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range, Color.SkyBlue); }
-
+          
             }
 
             if (draw["drawW"].Cast<CheckBox>().CurrentValue && DemSpells.W.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
@@ -345,7 +345,27 @@ namespace Veigarino
             }
 
             Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10 ,Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
-        } 
+        }
+        private static void OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
+        {
+            if (sender != null && sender.IsEnemy && DemSpells.E.IsInRange(sender) && DemSpells.E.IsReady() && sender.IsValidTarget() && misc["gapmode"].Cast<ComboBox>().CurrentValue != 0)
+            {
+                var gpred = DemSpells.E.GetPrediction(sender);
+                switch (misc["gapmode"].Cast<ComboBox>().CurrentValue)
+                {
+                    case 1:
+                        if(!sender.IsFleeing && sender.IsFacing(myhero))
+                        DemSpells.E.Cast(myhero.Position);
+                        break;
+                    case 2:
+                        if (gpred != null && gpred.HitChancePercent >= pred["Ehit"].Cast<Slider>().CurrentValue)
+                        {
+                            DemSpells.E.Cast(gpred.CastPosition);
+                        }
+                        break;
+                }
+            }
+        }
         private static void DatMenu()
         {
 
@@ -358,7 +378,7 @@ namespace Veigarino
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Veigar And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.0");
+            menu.AddGroupLabel("Version 1.3");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -401,9 +421,6 @@ namespace Veigarino
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Auto Laneclear");
             laneclear.Add("AutoL", new CheckBox("Auto Laneclear", false));
-            
-
-            
 
             draw.Add("nodraw", new CheckBox("Disable All Drawings",false)); 
             draw.AddSeparator();
@@ -415,13 +432,16 @@ namespace Veigarino
             draw.Add("drawk", new CheckBox("Draw Killable Enemies",false));
             draw.Add("nodrawc", new CheckBox("Draw Only Ready Spells",false));
 
+            misc.AddGroupLabel("Killsteal");
             misc.Add("ksQ", new CheckBox("Killsteal with Q",false));
             misc.Add("ksW", new CheckBox("Killsteal with W(With Prediction)",false));
             misc.Add("ksR", new CheckBox("Killsteal with R",false));
+            misc.Add("autoing", new CheckBox("Auto Ignite If Killable", false));
+            misc.AddGroupLabel("Gapcloser");
+            misc.Add("gapmode", new ComboBox("Use E On Gapcloser                                    Mode:", 0, "Off","Self","Enemy(Pred)"));
             misc.AddSeparator();
             misc.AddGroupLabel("Auto Level Up Spells");
             misc.Add("autoS",new CheckBox("Activate Auto Level Up Spells",true));
-    //        misc.Add("lvlSpells", new ComboBox("Choose Sequence" , 0 , "Q>W>E"));
             misc.AddSeparator();
             misc.AddGroupLabel("Skin Hack");
             misc.Add("sh", new CheckBox("Activate Skin hack"));
@@ -433,6 +453,9 @@ namespace Veigarino
             pred.AddSeparator();
             pred.AddGroupLabel("W HitChance");
             pred.Add("Whit", new ComboBox("Selecte Hitchance", 1, "Low", "Medium", "High"));
+            pred.AddSeparator();
+            pred.AddGroupLabel("E HitChance");
+            pred.Add("Ehit", new Slider("% Hitchance",85,1,100));
                 
         }          
     }
