@@ -213,7 +213,7 @@ namespace Veigarino
         } 
         private static void QStack()
         {
-            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => Prediction.Health.GetPrediction(x, DemSpells.Q.CastDelay ) < (myhero.GetSpellDamage(x, SpellSlot.Q) - 20) && x.IsValidTarget() && x.Distance(myhero) < DemSpells.Q.Range - 10);
+            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => Prediction.Health.GetPrediction(x, DemSpells.Q.CastDelay ) < (myhero.GetSpellDamage(x, SpellSlot.Q) - 15) && x.IsValidTarget() && x.Distance(myhero) < DemSpells.Q.Range - 10);
                                                                                                                                                                                                                               
             var FarmPred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(farm, DemSpells.Q.Width, (int)DemSpells.Q.Range);
 
