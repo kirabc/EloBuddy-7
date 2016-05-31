@@ -303,40 +303,40 @@ namespace Veigarino
             if (draw["drawQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
-                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range, DemSpells.Q.IsOnCooldown ? Color.Transparent : Color.SkyBlue); }
+                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.Q.IsOnCooldown ?  SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.Q.Range, myhero.Position); }
 
-                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range, Color.SkyBlue); }
-          
+                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Fuchsia, DemSpells.Q.Range, myhero.Position); }
+                // Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range, DemSpells.Q.IsOnCooldown ? Color.Transparent : Color.SkyBlue);
             }
 
             if (draw["drawW"].Cast<CheckBox>().CurrentValue && DemSpells.W.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
-                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.W.Range, DemSpells.W.IsOnCooldown ? Color.Transparent : Color.SkyBlue); }
+                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.W.Range, myhero.Position); }
 
-                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.W.Range, Color.SkyBlue); }
+                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Fuchsia, DemSpells.W.Range, myhero.Position); }
 
             }
 
             if (draw["drawE"].Cast<CheckBox>().CurrentValue && DemSpells.E.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
-                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.E.Range, DemSpells.E.IsOnCooldown ? Color.Transparent : Color.SkyBlue); }
+                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.E.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.E.Range, myhero.Position); }
 
-                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.E.Range, Color.SkyBlue); }
+                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Fuchsia, DemSpells.E.Range, myhero.Position); }
 
             }
 
             if (draw["drawR"].Cast<CheckBox>().CurrentValue && DemSpells.R.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
-                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.R.Range, DemSpells.R.IsOnCooldown ? Color.Transparent : Color.SkyBlue); }
+                if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.R.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.R.Range, myhero.Position); }
 
-                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Drawing.DrawCircle(myhero.Position, DemSpells.R.Range, Color.SkyBlue); }
+                else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Fuchsia, DemSpells.R.Range, myhero.Position); }
 
             }
 
-            if (draw["drawAA"].Cast<CheckBox>().CurrentValue && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue) Drawing.DrawCircle(myhero.Position, myhero.AttackRange, Color.White); 
+            if (draw["drawAA"].Cast<CheckBox>().CurrentValue && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue) Circle.Draw(SharpDX.Color.LightYellow, myhero.AttackRange, myhero.Position); 
 
             foreach (var enemy in EntityManager.Heroes.Enemies)
             {
