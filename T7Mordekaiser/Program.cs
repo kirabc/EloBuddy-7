@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using EloBuddy;
 using EloBuddy.SDK;
@@ -190,9 +190,13 @@ namespace T7MordeOP
             if (laneclear["LQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() &&
                 minions.Where(x => x.Distance(myhero) < myhero.AttackRange).Count() >= laneclear["lminmin1"].Cast<Slider>().CurrentValue) { DemSpells.Q.Cast(); }
 
-            if (minions.Count() >= laneclear["lminmin2"].Cast<Slider>().CurrentValue && laneclear["LE"].Cast<CheckBox>().CurrentValue && 
-                DemSpells.E.IsLearned && DemSpells.E.IsReady())
-            {  foreach (var minion in minions.Where(x => x.Distance(myhero) < DemSpells.E.Range)) DemSpells.E.Cast(minion.Position);  }
+            if (laneclear["LE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsLearned && DemSpells.E.IsReady())
+            {     
+                foreach (var minion in minions.Where(x => x.Distance(myhero) < DemSpells.E.Range))
+                {
+                    DemSpells.E.Cast(minion.Position);
+                }
+            }
         }
 
         private static void Misc()
@@ -268,7 +272,7 @@ namespace T7MordeOP
             combo.Add("CW", new CheckBox("Use W in Combo", true));
             combo.Add("CE", new CheckBox("Use E in Combo", true));
             combo.Add("CR", new CheckBox("Use R in Combo", true));
-            combo.Add("Cignt", new CheckBox("Use Ignite", false));
+            combo.Add("Cignt", new CheckBox("Use Ignite", true));
             combo.AddSeparator();
             combo.AddGroupLabel("E Mode:");
             combo.Add("EMode", new ComboBox("Select Mode", 1, "With Prediction", "Without Prediciton"));
@@ -284,12 +288,12 @@ namespace T7MordeOP
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q", true));
-            laneclear.Add("LW", new CheckBox("Use W", false));
+       //     laneclear.Add("LW", new CheckBox("Use W", false));
             laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Spell Options");
             laneclear.Add("lminmin1", new Slider("Min Minions To Cast Q", 2, 0, 6));
-            laneclear.Add("lminmin2", new Slider("Min Minions To Cast E", 1, 0, 6));
+         //   laneclear.Add("lminmin2", new Slider("Min Minions To Cast E", 1, 0, 6));
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Stop Laneclear At % Health");
             laneclear.Add("lminhealth", new Slider("%", 65, 0, 100));
@@ -306,7 +310,7 @@ namespace T7MordeOP
             misc.AddGroupLabel("Killsteal");
     //        misc.Add("ksW", new CheckBox("Killsteal with W", false));
             misc.Add("ksE", new CheckBox("Killsteal with E", true));
-            misc.Add("autoing", new CheckBox("Auto Ignite If Killable", true));
+            misc.Add("autoing", new CheckBox("Auto Ignite If Killable", false));
             misc.AddSeparator();
             misc.AddGroupLabel("Prediction");
             misc.AddGroupLabel("E :");
@@ -334,7 +338,7 @@ namespace T7MordeOP
         {
             Q = new Spell.Active(SpellSlot.Q);
             W = new Spell.Targeted(SpellSlot.W , 1000);
-            E = new Spell.Skillshot(SpellSlot.E, 675, SkillShotType.Cone); 
+            E = new Spell.Skillshot(SpellSlot.E, 670, SkillShotType.Cone, (int)0.25f, 2000, 12 * 2 * (int)Math.PI / 180); //Credits to Kk2 for cone data
             R = new Spell.Targeted(SpellSlot.R, 650);
         }
     }
