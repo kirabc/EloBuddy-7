@@ -16,8 +16,10 @@ namespace T7MordeOP
     {
         private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
-        private static Menu menu, combo, harass, laneclear, misc, draw, pred, sequence1, sequence2, sequence3;
+        private static Menu menu, combo, harass, laneclear,jungleclear, misc, draw, pred, sequence1, sequence2, sequence3;
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
+      //  private static float RAttackDelay = 1200;
+      
         public static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "Mordekaiser") { return; }
@@ -25,6 +27,7 @@ namespace T7MordeOP
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
+            Game.OnUpdate += OnUpdate;
            // Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
@@ -35,20 +38,28 @@ namespace T7MordeOP
 
         private static void OnTick(EventArgs args)
         {
-            if (myhero.IsDead) return;     
+            if (myhero.IsDead) return;
 
             var flags = Orbwalker.ActiveModesFlags;
-          //  Chat.Print(DemSpells.W.Name);
+
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo) && (myhero.Health - TotalHealthLoss()) > 100)
             {
                 Combo();
             }
-            
+
             if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.HealthPercent > harass["hminhealth"].Cast<Slider>().CurrentValue) Harass();
-            
-            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) &&  myhero.HealthPercent > laneclear["lminhealth"].Cast<Slider>().CurrentValue ) Laneclear();
+
+            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.HealthPercent > laneclear["lminhealth"].Cast<Slider>().CurrentValue) Laneclear();
+
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.HealthPercent > jungleclear["jminhealth"].Cast<Slider>().CurrentValue) Jungleclear();
+           
             Misc();
-            
+
+        }
+
+        private static bool check(Menu submenu, string sig)
+        {
+            return submenu[sig].Cast<CheckBox>().CurrentValue;
         }
 
         private static void OnLvlUp(Obj_AI_Base sender, Obj_AI_BaseLevelUpEventArgs args)
@@ -62,10 +73,10 @@ namespace T7MordeOP
                                         SpellSlot.Q, SpellSlot.W, SpellSlot.W, SpellSlot.R, 
                                         SpellSlot.W , SpellSlot.W };
 
-            if (misc["autolevel"].Cast<CheckBox>().CurrentValue) Player.LevelSpell(sequence1[myhero.Level]);
+            if (check(misc,"autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
         }
 
-        private static float ComboDamage(Obj_AI_Base target)
+        private static float ComboDamage(AIHeroClient target)
         {
             if (target != null)
             {
@@ -89,7 +100,17 @@ namespace T7MordeOP
             return HealthLoss;
         }
 
-        private static float TotalQDamage(Obj_AI_Base target)
+        /*private static Obj_AI_Base Ghost
+        {
+            get
+            {
+                if (DemSpells.R.Name.ToLower() != "mordekaisercotgguide") return null;
+
+                return ObjectManager.Get<Obj_AI_Base>().FirstOrDefault(m => m.Distance(myhero.Position) < 10000 && m.IsAlly && m.HasBuff("mordekaisercotgpetbuff2"));
+            }                       
+        }*/
+
+        private static float TotalQDamage(AIHeroClient target)
         {   
             var qdamage = (new[] { 0, 10, 20, 30, 40, 50 }[DemSpells.Q.Level] +
                           (new[] { 0, 0.5, 0.6, 0.7, 0.8, 0.9 }[DemSpells.Q.Level] * myhero.TotalAttackDamage) +
@@ -100,14 +121,14 @@ namespace T7MordeOP
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)qdamage);
         }
 
-        private static float TotalWDamage(Obj_AI_Base target)
+        private static float TotalWDamage(AIHeroClient target)
         {
             var TotalWDamage = (new[] { 0, 140, 180, 220, 260, 300 }[DemSpells.W.Level] + (0.9 * myhero.FlatMagicDamageMod)) + 
                                (new[] { 0, 50, 85, 120, 155, 190 }[DemSpells.W.Level] + (0.3 * myhero.FlatMagicDamageMod));
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)TotalWDamage); 
         }
 
-        private static float EDamage(Obj_AI_Base target)
+        private static float EDamage(AIHeroClient target)
         {
             var edamage = new[] { 0, 35, 65, 95, 125, 155 }[DemSpells.Q.Level] + 
                           (0.6 * myhero.TotalAttackDamage) + 
@@ -115,7 +136,7 @@ namespace T7MordeOP
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)edamage);
         }
 
-        private static float TotalRDamage(Obj_AI_Base target)
+        private static float TotalRDamage(AIHeroClient target)
         {
             var TotalRDamage = (new[] { 0, 0.25, 0.3, 0.35 }[DemSpells.R.Level] + 
                                (0.04 * (myhero.FlatMagicDamageMod / 100))) * 
@@ -125,8 +146,8 @@ namespace T7MordeOP
 
         private static void CastW()
         {
-            var allies = EntityManager.Heroes.Allies.Where(x => x.Distance(myhero) < 999);
-            if(DemSpells.W.IsReady() && combo["CW"].Cast<CheckBox>().CurrentValue && DemSpells.W.Name.ToLower() != "mordekaisercreepingdeath2")
+            var allies = EntityManager.Heroes.Allies.Where(x => x.Distance(myhero.Position) < 999);
+            if (DemSpells.W.IsReady() && check(combo, "CW") && DemSpells.W.Name.ToLower() != "mordekaisercreepingdeath2")
             {
                 
                 foreach (var ally in allies.Where(a => !a.IsMe && !a.IsDead && a.CountEnemiesInRange(350) > 0))
@@ -141,15 +162,14 @@ namespace T7MordeOP
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-       //     Chat.Print(ComboDamage(target));
-      //      Chat.Print(TotalQDamage(target));
-            if (combo["CQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsLearned && target.Distance(myhero) < myhero.AttackRange) DemSpells.Q.Cast();
+
+            if (check(combo, "CQ") && DemSpells.Q.IsReady() && DemSpells.Q.IsLearned && target.Distance(myhero.Position) < myhero.AttackRange) { DemSpells.Q.Cast(); }
 
             CastW();
 
-            if (combo["CE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && DemSpells.E.IsLearned && DemSpells.E.IsInRange(target))
+            if (check(combo, "CE") && DemSpells.E.IsReady() && DemSpells.E.IsLearned && DemSpells.E.IsInRange(target.Position))
             {
-                switch(combo["EMode"].Cast<ComboBox>().CurrentValue)
+                switch (combo["EMode"].Cast<ComboBox>().CurrentValue)
                 {
                     case 0 :
                         var Epred = DemSpells.E.GetPrediction(target);
@@ -161,15 +181,15 @@ namespace T7MordeOP
                 }
             }
 
-            if (combo["CR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() && DemSpells.R.IsLearned && DemSpells.R.IsInRange(target) &&
+            if (check(combo, "CR") && DemSpells.R.IsReady() && DemSpells.R.IsLearned && DemSpells.R.IsInRange(target.Position) &&
                 TotalRDamage(target) > (target.Health + (target.FlatHPRegenMod * 10)))
             {  
                 if (!DemSpells.E.IsReady() || EDamage(target) < target.Health)
-                {   if (!ignt.IsReady() || myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) < target.Health) { DemSpells.R.Cast(target); }   }
+                {  DemSpells.R.Cast(target);  }
                  
             }
 
-            if (combo["Cignt"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDamage(target) < target.Health && ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
+            if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && ignt.IsInRange(target.Position) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
             
         }
 
@@ -177,9 +197,9 @@ namespace T7MordeOP
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
 
-            if (harass["HQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsLearned && target.Distance(myhero) < myhero.AttackRange) DemSpells.Q.Cast();
+            if (check(harass, "HQ") && DemSpells.Q.IsReady() && DemSpells.Q.IsLearned && target.Distance(myhero) < myhero.AttackRange) DemSpells.Q.Cast();
 
-            if (harass["HE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && DemSpells.E.IsLearned && DemSpells.E.IsInRange(target)) DemSpells.E.Cast(target.Position);
+            if (check(harass, "HE") && DemSpells.E.IsReady() && DemSpells.E.IsLearned && DemSpells.E.IsInRange(target)) DemSpells.E.Cast(target.Position);
 
         }
 
@@ -187,10 +207,10 @@ namespace T7MordeOP
         {
             var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range);
 
-            if (laneclear["LQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() &&
+            if (check(laneclear, "LQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() &&
                 minions.Where(x => x.Distance(myhero) < myhero.AttackRange).Count() >= laneclear["lminmin1"].Cast<Slider>().CurrentValue) { DemSpells.Q.Cast(); }
 
-            if (laneclear["LE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsLearned && DemSpells.E.IsReady())
+            if (check(laneclear, "LE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
             {     
                 foreach (var minion in minions.Where(x => x.Distance(myhero) < DemSpells.E.Range))
                 {
@@ -201,54 +221,84 @@ namespace T7MordeOP
 
         private static void Misc()
         {
-            
-            if (misc["skinhack"].Cast<CheckBox>().CurrentValue) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
+
+            if (check(misc, "skinhack")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
             
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
 
             if (target != null)
             {
-                if (misc["ksE"].Cast<CheckBox>().CurrentValue && EDamage(target) > target.Health &&
+                if (check(misc, "ksE") && EDamage(target) > target.Health &&
                     DemSpells.E.IsInRange(target) && DemSpells.E.IsReady() && DemSpells.E.IsLearned &&
                     !target.IsInvulnerable) DemSpells.E.Cast(target);
 
-                if (misc["autoing"].Cast<CheckBox>().CurrentValue && ignt.IsReady() &&
+                if (check(misc, "autoign") && ignt.IsReady() &&
                     ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
             }
 
         }
 
+        private static void Jungleclear()
+        {
+            foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1000f))
+            {
+                if (monster.IsValidTarget())
+                {
+                    if (DemSpells.Q.IsReady() && check(jungleclear, "JQ")) { DemSpells.Q.Cast(); }
+                    if (DemSpells.W.IsReady() && check(jungleclear, "JW")) { DemSpells.W.Cast(myhero); }
+                    if (DemSpells.E.IsReady() && check(jungleclear, "JE")) { DemSpells.E.Cast(monster); } 
+                }
+            }
+        }
+
         private static void OnDraw(EventArgs args)
         {
 
-            if (draw["drawW"].Cast<CheckBox>().CurrentValue && DemSpells.W.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
+            if (check(draw, "drawW") && DemSpells.W.Level > 0 && !myhero.IsDead && !check(draw, "nodraw"))
             {
 
-                if (draw["drawonlyrdy"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.W.Range, myhero.Position); }
-                else if (!draw["drawonlyrdy"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Gray, DemSpells.W.Range, myhero.Position); }
+                if (check(draw, "drawonlyrdy")) 
+                { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.W.Range, myhero.Position); }
+
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.Gray, DemSpells.W.Range, myhero.Position); }
 
             }
 
-            if (draw["drawE"].Cast<CheckBox>().CurrentValue && DemSpells.E.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
+            if (check(draw, "drawE") && DemSpells.E.Level > 0 && !myhero.IsDead && !check(draw, "nodraw"))
             {
 
-                if (draw["drawonlyrdy"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.E.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Gray, DemSpells.E.Range, myhero.Position); }
-                else if (!draw["drawonlyrdy"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Gray, DemSpells.E.Range, myhero.Position); }
+                if (check(draw, "drawonlyrdy")) 
+                { Circle.Draw(DemSpells.E.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Gray, DemSpells.E.Range, myhero.Position); }
+
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.Gray, DemSpells.E.Range, myhero.Position); }
 
             }
 
-            if (draw["drawR"].Cast<CheckBox>().CurrentValue && DemSpells.R.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
+            if (check(draw, "drawR") && DemSpells.R.Level > 0 && !myhero.IsDead && !check(draw, "nodraw"))
             {
 
-                if (draw["drawonlyrdy"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.R.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Gray, DemSpells.R.Range, myhero.Position); }
-                else if (!draw["drawonlyrdy"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Gray, DemSpells.R.Range, myhero.Position); }
+                if (check(draw, "drawonlyrdy")) 
+                { Circle.Draw(DemSpells.R.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Gray, DemSpells.R.Range, myhero.Position); }
+
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.Gray, DemSpells.R.Range, myhero.Position); }
 
             }
             
             foreach (var enemy in EntityManager.Heroes.Enemies)
             {
-                if (draw["drawkillable"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDamage(enemy) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Killable With Combo");
-                else if (draw["drawkillable"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDamage(enemy) + myhero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Combo + Ignite");
+                if (check(draw, "drawkillable") && !check(draw, "nodraw") && enemy.IsVisible &&
+                    enemy.IsHPBarRendered && !enemy.IsDead && ComboDamage(enemy) > enemy.Health)
+                {
+                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X,
+                                     Drawing.WorldToScreen(enemy.Position).Y - 30,
+                                     Color.Green, "Killable With Combo");
+                }
+                else if (check(draw, "drawkillable") && !check(draw, "nodraw") && enemy.IsVisible &&
+                         enemy.IsHPBarRendered && !enemy.IsDead &&
+                         ComboDamage(enemy) + myhero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) > enemy.Health)
+                {
+                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Combo + Ignite");
+                }
             }
         }
 
@@ -258,11 +308,12 @@ namespace T7MordeOP
             combo = menu.AddSubMenu("Combo", "combo");
             harass = menu.AddSubMenu("Harass", "harass");
             laneclear = menu.AddSubMenu("Laneclear", "lclear");
+            jungleclear = menu.AddSubMenu("Jungleclear", "jclear");
             draw = menu.AddSubMenu("Drawings", "draw");
             misc = menu.AddSubMenu("Misc", "misc");
 
             menu.AddGroupLabel("Welcome to T7 Mordekaiser And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.0 31/5/2016");
+            menu.AddGroupLabel("Version 1.0 5/6/2016 (Beta)");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -273,6 +324,7 @@ namespace T7MordeOP
             combo.Add("CE", new CheckBox("Use E in Combo", true));
             combo.Add("CR", new CheckBox("Use R in Combo", true));
             combo.Add("Cignt", new CheckBox("Use Ignite", true));
+            combo.Add("CGhost", new CheckBox("Auto Control Ghost", true));
             combo.AddSeparator();
             combo.AddGroupLabel("E Mode:");
             combo.Add("EMode", new ComboBox("Select Mode", 1, "With Prediction", "Without Prediciton"));
@@ -284,7 +336,6 @@ namespace T7MordeOP
             harass.AddSeparator();
             harass.AddGroupLabel("Min Mana To Harass");
             harass.Add("hminhealth", new Slider("Stop Harass At % Health", 65, 0, 100));
-            harass.AddSeparator();
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q", true));
@@ -298,6 +349,11 @@ namespace T7MordeOP
             laneclear.AddGroupLabel("Stop Laneclear At % Health");
             laneclear.Add("lminhealth", new Slider("%", 65, 0, 100));
 
+            jungleclear.AddGroupLabel("Spells");
+            jungleclear.Add("JQ", new CheckBox("Use Q", true));
+            jungleclear.Add("JW", new CheckBox("Use W", true));
+            jungleclear.Add("JE", new CheckBox("Use E", true));
+            jungleclear.Add("jminhealth", new Slider("Stop Jungleclear At % Health",50,0,100));
 
             draw.Add("nodraw", new CheckBox("Disable All Drawings", false));
             draw.AddSeparator();
