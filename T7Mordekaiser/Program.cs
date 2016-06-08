@@ -27,7 +27,7 @@ namespace T7MordeOP
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
-            Game.OnUpdate += OnUpdate;
+           // Game.OnUpdate += OnUpdate;
            // Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
