@@ -324,7 +324,7 @@ namespace T7MordeOP
             combo.Add("CE", new CheckBox("Use E in Combo", true));
             combo.Add("CR", new CheckBox("Use R in Combo", true));
             combo.Add("Cignt", new CheckBox("Use Ignite", true));
-            combo.Add("CGhost", new CheckBox("Auto Control Ghost", true));
+         //   combo.Add("CGhost", new CheckBox("Auto Control Ghost", true));
             combo.AddSeparator();
             combo.AddGroupLabel("E Mode:");
             combo.Add("EMode", new ComboBox("Select Mode", 1, "With Prediction", "Without Prediciton"));
