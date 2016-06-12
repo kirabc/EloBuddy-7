@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using EloBuddy;
 using EloBuddy.SDK;
@@ -18,16 +19,15 @@ namespace T7MordeOP
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu, combo, harass, laneclear,jungleclear, misc, draw, pred, sequence1, sequence2, sequence3;
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
-      //  private static float RAttackDelay = 1200;
-      
+        private static float RAttackDelay = 1200;
         public static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "Mordekaiser") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#1F1F1F'> Mordekaiser</font> : Loaded!(v1.0)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#1F1F1F'> Mordekaiser</font> : Loaded!(v1.1)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
-           // Game.OnUpdate += OnUpdate;
+            Game.OnUpdate += OnUpdate;
            // Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
@@ -41,7 +41,7 @@ namespace T7MordeOP
             if (myhero.IsDead) return;
 
             var flags = Orbwalker.ActiveModesFlags;
-
+        //    Chat.Print(Ghost.Name);
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo) && (myhero.Health - TotalHealthLoss()) > 100)
             {
                 Combo();
@@ -100,7 +100,7 @@ namespace T7MordeOP
             return HealthLoss;
         }
 
-        /*private static Obj_AI_Base Ghost
+        private static Obj_AI_Base Ghost
         {
             get
             {
@@ -108,7 +108,7 @@ namespace T7MordeOP
 
                 return ObjectManager.Get<Obj_AI_Base>().FirstOrDefault(m => m.Distance(myhero.Position) < 10000 && m.IsAlly && m.HasBuff("mordekaisercotgpetbuff2"));
             }                       
-        }*/
+        }
 
         private static float TotalQDamage(AIHeroClient target)
         {   
@@ -159,6 +159,49 @@ namespace T7MordeOP
             }
         }
 
+        private static void OnUpdate(EventArgs args)
+        {
+            if (myhero.IsDead) return;
+
+            if ( check( combo, "CGhost") )
+            {
+
+                var target = TargetSelector.GetTarget(4500, DamageType.Physical, Player.Instance.Position);
+                if (target.IsValidTarget() && Ghost != null)
+                {
+                    if (!(Environment.TickCount >= RAttackDelay))
+                    {
+                        return;
+                    }
+
+                    if (check(combo, "GHOSTCOMBO") && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
+                    {
+                        return;
+                    }
+                       
+                    switch (combo["GHOSTMODE"].Cast<ComboBox>().CurrentValue)
+                    {
+                        case 0:
+                            {
+                                target = TargetSelector.GetTarget(1000, DamageType.Physical, Player.Instance.Position);
+                                DemSpells.R.Cast(target);                                                                    
+                            }
+                            break;
+                        case 1:
+                            {
+                               // if (combo["GHOSTMIN"].Cast<Slider>().CurrentValue >= Ghost.CountEnemiesInRange(4500))
+                              //  {
+                                    target = TargetSelector.GetTarget(4500, DamageType.Physical, Player.Instance.Position);
+                                    DemSpells.R.Cast(target);
+                              //  }
+                            }
+                            break;
+                    }
+                    RAttackDelay = Environment.TickCount + Ghost.AttackDelay * 1000;                 
+                }
+            }
+        }
+
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
@@ -189,8 +232,19 @@ namespace T7MordeOP
                  
             }
 
-            if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && ignt.IsInRange(target.Position) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
-            
+            if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && ignt.IsInRange(target.Position) &&
+                myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health &&
+                !target.HasBuff("mordekaisercotgpetbuff2"))
+            {
+                if (target.Distance(myhero.Position) < (DemSpells.E.Range / 2))
+                {
+                    return;
+                }
+                else
+                {
+                    ignt.Cast(target);
+                }
+            }       
         }
 
         private static void Harass()
@@ -283,6 +337,23 @@ namespace T7MordeOP
                 else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.Gray, DemSpells.R.Range, myhero.Position); }
 
             }
+
+            if (check(draw, "DRAWGHOSTAA") && Ghost != null && !myhero.IsDead && !check(draw, "nodraw"))
+            {
+                Circle.Draw(SharpDX.Color.SkyBlue, Ghost.AttackRange, Ghost.Position); 
+            }
+
+            if (check(draw, "DRAWGHOSTTIME") && Ghost != null && !myhero.IsDead && !check(draw, "nodraw"))
+            {
+                foreach( var buff in Ghost.Buffs.Where(x => x.IsValid() && x.Name.Contains("mordekaisercotgpetbuff2")))
+                {
+                    var endTime = Math.Max(0, buff.EndTime - Game.Time);
+                    Drawing.DrawText(Drawing.WorldToScreen(Ghost.Position).X,                   // Credits To Hellsing
+                                         Drawing.WorldToScreen(Ghost.Position).Y - 30,
+                                         Color.Green, "Time: " + Convert.ToString(endTime, CultureInfo.InvariantCulture));
+                }
+                
+            }
             
             foreach (var enemy in EntityManager.Heroes.Enemies)
             {
@@ -313,7 +384,7 @@ namespace T7MordeOP
             misc = menu.AddSubMenu("Misc", "misc");
 
             menu.AddGroupLabel("Welcome to T7 Mordekaiser And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.0 5/6/2016 (Beta)");
+            menu.AddGroupLabel("Version 1.1 9/6/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -324,7 +395,12 @@ namespace T7MordeOP
             combo.Add("CE", new CheckBox("Use E in Combo", true));
             combo.Add("CR", new CheckBox("Use R in Combo", true));
             combo.Add("Cignt", new CheckBox("Use Ignite", true));
-         //   combo.Add("CGhost", new CheckBox("Auto Control Ghost", true));
+            combo.AddSeparator();
+            combo.AddGroupLabel("Ghost Settings");
+            combo.Add("CGhost", new CheckBox("Auto Control Ghost", true));
+            combo.Add("GHOSTMODE", new ComboBox("Select Ghost Mode     =>",0,"Fight My Target","Go Attack Enemies"));
+            combo.Add("GHOSTCOMBO", new CheckBox("Only Control Drag While In Combo Mode", true));
+            combo.Add("GHOSTMIN", new Slider("Dont Harass If More Than X Enemies:",3,1,5));
             combo.AddSeparator();
             combo.AddGroupLabel("E Mode:");
             combo.Add("EMode", new ComboBox("Select Mode", 1, "With Prediction", "Without Prediciton"));
@@ -362,6 +438,9 @@ namespace T7MordeOP
             draw.Add("drawR", new CheckBox("Draw R Range", true));
             draw.Add("drawkillable", new CheckBox("Draw Killable Enemies", false));
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
+            draw.AddSeparator();
+            draw.Add("DRAWGHOSTAA", new CheckBox("Draw Ghost's AA Range", true));
+            draw.Add("DRAWGHOSTTIME", new CheckBox("Draw Ghost's Remaining Time", true));
 
             misc.AddGroupLabel("Killsteal");
     //        misc.Add("ksW", new CheckBox("Killsteal with W", false));
