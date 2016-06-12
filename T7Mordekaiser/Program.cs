@@ -179,24 +179,9 @@ namespace T7MordeOP
                         return;
                     }
                        
-                    switch (combo["GHOSTMODE"].Cast<ComboBox>().CurrentValue)
-                    {
-                        case 0:
-                            {
-                                target = TargetSelector.GetTarget(1000, DamageType.Physical, Player.Instance.Position);
-                                DemSpells.R.Cast(target);                                                                    
-                            }
-                            break;
-                        case 1:
-                            {
-                               // if (combo["GHOSTMIN"].Cast<Slider>().CurrentValue >= Ghost.CountEnemiesInRange(4500))
-                              //  {
-                                    target = TargetSelector.GetTarget(4500, DamageType.Physical, Player.Instance.Position);
-                                    DemSpells.R.Cast(target);
-                              //  }
-                            }
-                            break;
-                    }
+                    target = TargetSelector.GetTarget(4500, DamageType.Physical, Player.Instance.Position);
+                    DemSpells.R.Cast(target);
+                              
                     RAttackDelay = Environment.TickCount + Ghost.AttackDelay * 1000;                 
                 }
             }
@@ -384,7 +369,7 @@ namespace T7MordeOP
             misc = menu.AddSubMenu("Misc", "misc");
 
             menu.AddGroupLabel("Welcome to T7 Mordekaiser And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.1 9/6/2016");
+            menu.AddGroupLabel("Version 1.1 12/6/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
