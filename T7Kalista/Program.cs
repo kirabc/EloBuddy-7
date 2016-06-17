@@ -29,8 +29,6 @@ namespace T7_Kalista
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
-            // Game.OnUpdate += OnUpdate;
-            // Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
             Player.LevelSpell(SpellSlot.E);
@@ -48,8 +46,6 @@ namespace T7_Kalista
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > laneclear["LMIN"].Cast<Slider>().CurrentValue) Laneclear();
 
-     //       if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.HealthPercent > jungleclear["jminhealth"].Cast<Slider>().CurrentValue) Jungleclear();
-            
             Misc();
         }
 
@@ -165,8 +161,7 @@ namespace T7_Kalista
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
-            Chat.Print(EDamage(target) + " " + target.Health);
-
+            
             if (target != null)
             {
                 var QPred = DemSpells.Q.GetPrediction(target);
@@ -191,14 +186,6 @@ namespace T7_Kalista
                         DemSpells.E.Cast();
                     }
                 }
-
-           /*     if (check(combo, "CORB") && Orbwalker.CanAutoAttack && target.Distance(myhero.Position) > myhero.AttackRange &&
-                        !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear) &&
-                        !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
-                {
-                    Orbwalker.ForcedTarget = EntityManager.MinionsAndMonsters.CombinedAttackable.FirstOrDefault(o => o.Distance(myhero.Position) < myhero.AttackRange);
-                }
-                else { Orbwalker.ForcedTarget = target; }*/
             }
         }
 
@@ -220,13 +207,6 @@ namespace T7_Kalista
                     DemSpells.E.IsInRange(target.Position))
                 {
                     DemSpells.E.Cast();
-                }
-
-                if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && ignt.IsInRange(target.Position) &&
-                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health &&
-                    !target.HasBuff("mordekaisercotgpetbuff2"))
-                {
-                    ignt.Cast(target);
                 }
             }
 
