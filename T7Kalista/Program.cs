@@ -165,8 +165,7 @@ namespace T7_Kalista
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
-            Chat.Print(EDamage(target) + " " + target.Health);
-
+            
             if (target != null)
             {
                 var QPred = DemSpells.Q.GetPrediction(target);
