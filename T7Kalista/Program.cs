@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
@@ -29,6 +29,8 @@ namespace T7_Kalista
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
+            // Game.OnUpdate += OnUpdate;
+            // Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
             Player.LevelSpell(SpellSlot.E);
@@ -46,6 +48,8 @@ namespace T7_Kalista
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > laneclear["LMIN"].Cast<Slider>().CurrentValue) Laneclear();
 
+     //       if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.HealthPercent > jungleclear["jminhealth"].Cast<Slider>().CurrentValue) Jungleclear();
+            
             Misc();
         }
 
@@ -161,7 +165,8 @@ namespace T7_Kalista
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
-            
+            Chat.Print(EDamage(target) + " " + target.Health);
+
             if (target != null)
             {
                 var QPred = DemSpells.Q.GetPrediction(target);
@@ -185,6 +190,12 @@ namespace T7_Kalista
                     {
                         DemSpells.E.Cast();
                     }
+                }
+
+                if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && ignt.IsInRange(target.Position) &&
+                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)
+                {
+                    ignt.Cast(target);
                 }
             }
         }
@@ -230,13 +241,13 @@ namespace T7_Kalista
                 {
                     foreach (var minion in minions.Where(x => x.Distance(myhero) < DemSpells.E.Range))
                     {
-                        if (slider(laneclear, "LEMIN") >= GetMinionStacks(minion))
+                        if (slider(laneclear, "LEMIN") <= GetMinionStacks(minion))
                         {
                             if (check(laneclear, "LEONLY") && EMinionDamage(minion) > (minion.Health + 10))
                             {
                                 DemSpells.E.Cast();
                             }
-                            else if (!check(laneclear, "LEONLY"))
+                            else
                             {
                                 DemSpells.E.Cast();
                             }             
@@ -271,7 +282,7 @@ namespace T7_Kalista
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-               if (RendTime(target) < 0.3 && check(misc, "AUTOE2"))
+               if (RendTime(target) < 0.3 && check(misc, "AUTOE2") && target.Distance(myhero.Position) < DemSpells.E.Range)
                {
                    DemSpells.E.Cast();
                }
@@ -280,6 +291,17 @@ namespace T7_Kalista
                     ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)
                 {
                     ignt.Cast(target);
+                }
+            }
+
+            if (check(misc, "ksD") && DemSpells.E.IsReady())
+            {
+                foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1000f).Where(x => x.Name.ToLower().Contains("dragon")))
+                {
+                    if (monster.IsValidTarget() && EMinionDamage(monster) > monster.Health && DemSpells.E.IsInRange(monster.Position))
+                    {
+                        DemSpells.E.Cast();
+                    }
                 }
             }
         }
@@ -345,7 +367,7 @@ namespace T7_Kalista
             misc = menu.AddSubMenu("Misc", "misc");
 
             menu.AddGroupLabel("Welcome to T7 Kalista And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.0 17/6/2016");
+            menu.AddGroupLabel("Version 1.0 18/6/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -354,17 +376,17 @@ namespace T7_Kalista
             combo.Add("CQ", new CheckBox("Use Q", true));
           //  combo.Add("CQAA", new CheckBox("Only Use Q After Auto Attack", true));
             combo.AddSeparator();
-            combo.Add("CE", new CheckBox("Use E", true));
-            combo.Add("AUTOE", new CheckBox("Auto Cast E When Target Is Escaping", true)); 
-            combo.Add("CEMIN", new Slider("Min Stacks To Use E", 7, 1, 50));
+            combo.Add("CE", new CheckBox("Use E", false));
+            combo.Add("AUTOE", new CheckBox("Auto Cast E When Target Is Escaping", false)); 
+            combo.Add("CEMIN", new Slider("Min Stacks To Use E", 10, 1, 50));
             combo.AddSeparator();
-            combo.Add("Cignt", new CheckBox("Use Ignite", true));
+            combo.Add("Cignt", new CheckBox("Use Ignite", false));
            // combo.Add("CORB", new CheckBox("Orbwalk On Minions To Gapclose", true));
             
             harass.AddGroupLabel("Spells");
             harass.Add("HQ", new CheckBox("Use Q", true));
             harass.Add("HE", new CheckBox("Use E", true));
-            harass.Add("EMIN", new Slider("Min Stacks To Use E", 3, 1, 20));
+            harass.Add("EMIN", new Slider("Min Stacks To Use E", 5, 1, 20));
             harass.AddSeparator();
             harass.Add("HMIN", new Slider("Min Mana % To Harass", 50, 0, 100));
 
@@ -373,7 +395,7 @@ namespace T7_Kalista
             laneclear.AddSeparator();
             laneclear.Add("LE", new CheckBox("Use E", true));
             laneclear.Add("LEONLY", new CheckBox("Only Use E On Killable Minions", true));
-            laneclear.Add("LEMIN", new Slider("Min Stacks To Use E", 4, 1, 10));
+            laneclear.Add("LEMIN", new Slider("Min Stacks To Use E", 3, 1, 10));
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
@@ -386,10 +408,11 @@ namespace T7_Kalista
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
        
             misc.AddGroupLabel("Killsteal");
-            misc.Add("ksQ", new CheckBox("Killsteal with Q", true));
+            misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
             misc.Add("ksE", new CheckBox("Killsteal with E", true));
+            misc.Add("ksD", new CheckBox("Steal Dragon With E", true));
             misc.Add("AUTOE2", new CheckBox("Auto Cast E When Running Out Of time", true)); 
-            misc.Add("autoign", new CheckBox("Auto Ignite If Killable", false));         
+            misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));         
             misc.AddSeparator();
             misc.AddGroupLabel("Prediction");
             misc.AddGroupLabel("Q :");
