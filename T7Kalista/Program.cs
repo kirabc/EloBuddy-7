@@ -25,7 +25,7 @@ namespace T7_Kalista
         {
             DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Kalista") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#009DFF'> Kalista</font> : Loaded!(v1.0)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#009DFF'> Kalista</font> : Loaded!(v1.1)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -126,7 +126,7 @@ namespace T7_Kalista
             float endTime = 0;
             foreach (var buff in target.Buffs.Where(x => x.IsValid() && x.Name.ToLower().Contains("kalistaexpungemarker")))
             {
-                endTime = Math.Max(0, buff.EndTime - Game.Time);           
+                endTime = Math.Max(0, buff.EndTime - Game.Time);                
             }
             return endTime;
         }
@@ -139,12 +139,16 @@ namespace T7_Kalista
 
         private static float EDamage(AIHeroClient target)
         {
+            if (GetStacks(target) == 0) return 0;
+          
             int stacks = GetStacks(target);
-            var EDamage = new[] { 0, 20, 30, 40, 50, 60 }[DemSpells.E.Level] + (0.6 * myhero.TotalAttackDamage);
+            var index = DemSpells.E.Level - 1;
+
+            var EDamage = new[] { 0, 20, 30, 40, 50, 60 }[index] + (0.6 * myhero.TotalAttackDamage);
 
             if(stacks > 1)
             {
-                EDamage += ((new[] { 0, 10, 14, 19, 25, 32 }[DemSpells.E.Level] + (new[] { 0, 0.2, 0.225, 0.25, 0.275, 0.3 }[DemSpells.E.Level] * myhero.TotalAttackDamage)) * (stacks - 1));
+                EDamage += ((new[] { 0, 10, 14, 19, 25, 32 }[index] + (new[] { 0, 0.2, 0.225, 0.25, 0.275, 0.3 }[index] * myhero.TotalAttackDamage)) * (stacks - 1));
             }
 
             return myhero.CalculateDamageOnUnit(target, DamageType.Physical, (float)EDamage);
@@ -153,19 +157,21 @@ namespace T7_Kalista
         private static float EMinionDamage(Obj_AI_Base minion)
         {
             int stacks = GetMinionStacks(minion);
-            var EDamage = new[] { 0, 20, 30, 40, 50, 60 }[DemSpells.E.Level] + (0.6 * myhero.TotalAttackDamage);
+            var index = DemSpells.E.Level - 1;
+
+            var EDamage = new float[] { 20, 30, 40, 50, 60 }[index] + (0.6 * myhero.TotalAttackDamage);
 
             if (stacks > 1)
             {
-                EDamage += ((new[] { 0, 10, 14, 19, 25, 32 }[DemSpells.E.Level] + (new[] { 0, 0.2, 0.225, 0.25, 0.275, 0.3 }[DemSpells.E.Level] * myhero.TotalAttackDamage)) * (stacks - 1));
+                EDamage += ((new float[] { 10, 14, 19, 25, 32 }[index] + (new float[] { 0.2f, 0.225f, 0.25f, 0.275f, 0.3f }[index] * myhero.TotalAttackDamage)) * (stacks - 1));
             }
 
-            return myhero.CalculateDamageOnUnit(minion, DamageType.Physical, (float)EDamage);
+            return myhero.CalculateDamageOnUnit(minion, DamageType.Physical, (float)EDamage) * 0.9f;
         }
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
-            
+
             if (target != null)
             {
                 var QPred = DemSpells.Q.GetPrediction(target);
@@ -224,7 +230,7 @@ namespace T7_Kalista
 
         private static void Laneclear()
         {
-            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range);
+            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.E.Range).ToArray();
 
             if (minions != null)
             {
@@ -236,22 +242,13 @@ namespace T7_Kalista
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-                if (check(laneclear, "LE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
-                {
-                    foreach (var minion in minions.Where(x => x.Distance(myhero) < DemSpells.E.Range))
-                    {
-                        if (slider(laneclear, "LEMIN") <= GetMinionStacks(minion))
-                        {
-                            if (check(laneclear, "LEONLY") && EMinionDamage(minion) > (minion.Health + 10))
-                            {
-                                DemSpells.E.Cast();
-                            }
-                            else
-                            {
-                                DemSpells.E.Cast();
-                            }             
-                        }
-                    }
+                if(check(laneclear, "LE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
+                {                   
+                    int killables = minions.Where(x => x.Health >= 20 && x.Distance(myhero.Position) < (DemSpells.E.Range - 5) &&
+                                                  GetMinionStacks(x) > 0 && (x.Health + 10) < EMinionDamage(x)).Count(); ;
+                                                  
+                    if (killables >= slider(laneclear, "LEMIN"))
+                    {  DemSpells.E.Cast();  }
                 }
             }
         }
@@ -281,10 +278,10 @@ namespace T7_Kalista
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-               if (RendTime(target) < 0.3 && check(misc, "AUTOE2") && target.Distance(myhero.Position) < DemSpells.E.Range)
+           /*    if (RendTime(target) < 0.3 && check(misc, "AUTOE2") && target.Distance(myhero.Position) < DemSpells.E.Range)
                {
                    DemSpells.E.Cast();
-               }
+               }*/
 
                 if (check(misc, "autoign") && ignt.IsReady() &&
                     ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)
@@ -293,9 +290,23 @@ namespace T7_Kalista
                 }
             }
 
-            if (check(misc, "ksD") && DemSpells.E.IsReady())
+            if (check(misc, "ksDB") && DemSpells.E.IsReady())
             {
-                foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1000f).Where(x => x.Name.ToLower().Contains("dragon")))
+                foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1000f)
+                                                                        .Where(x => x.Name.ToLower().Contains("dragon") ||
+                                                                                    x.Name.ToLower().Contains("baron")))
+                {
+                    if (monster.IsValidTarget() && EMinionDamage(monster) > monster.Health && DemSpells.E.IsInRange(monster.Position))
+                    {
+                        DemSpells.E.Cast();
+                    }
+                }
+            }
+
+            if (check(misc, "ksJ") && DemSpells.E.IsReady())
+            {
+                foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1000f)
+                                                                        .Where(x => !x.Name.ToLower().Contains("mini")))
                 {
                     if (monster.IsValidTarget() && EMinionDamage(monster) > monster.Health && DemSpells.E.IsInRange(monster.Position))
                     {
@@ -314,7 +325,7 @@ namespace T7_Kalista
                 if (check(draw, "drawonlyrdy"))
                 { Circle.Draw(DemSpells.Q.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.Q.Range, myhero.Position); }
 
-                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.SkyBlue, DemSpells.W.Range, myhero.Position); }
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.SkyBlue, DemSpells.Q.Range, myhero.Position); }
 
             }
 
@@ -338,20 +349,15 @@ namespace T7_Kalista
 
             }
 
-            foreach (var enemy in EntityManager.Heroes.Enemies)
+
+            if (check(draw, "drawpercent") && DemSpells.E.IsReady())
             {
-                if (check(draw, "drawkillable") && !check(draw, "nodraw") && enemy.IsVisible &&
-                    enemy.IsHPBarRendered && !enemy.IsDead && ComboDamage(enemy) > enemy.Health)
+                foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => GetStacks(x) >= 1 && x.IsHPBarRendered))
                 {
-                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X,
-                                     Drawing.WorldToScreen(enemy.Position).Y - 30,
-                                     Color.Green, "Killable With Combo");
-                }
-                else if (check(draw, "drawkillable") && !check(draw, "nodraw") && enemy.IsVisible &&
-                         enemy.IsHPBarRendered && !enemy.IsDead && ignt.IsReady() &&
-                         ComboDamage(enemy) + myhero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) > enemy.Health )
-                {
-                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Combo + Ignite");
+                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X + 50 ,
+                                     Drawing.WorldToScreen(enemy.Position).Y - 50,
+                                     Color.LimeGreen,
+                                     Math.Floor(((EDamage(enemy) / enemy.Health) * 100)).ToString() + "%");
                 }
             }
         }
@@ -366,7 +372,7 @@ namespace T7_Kalista
             misc = menu.AddSubMenu("Misc", "misc");
 
             menu.AddGroupLabel("Welcome to T7 Kalista And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.0 18/6/2016");
+            menu.AddGroupLabel("Version 1.1 19/6/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -393,8 +399,7 @@ namespace T7_Kalista
             laneclear.Add("LQ", new CheckBox("Use Q", true));
             laneclear.AddSeparator();
             laneclear.Add("LE", new CheckBox("Use E", true));
-            laneclear.Add("LEONLY", new CheckBox("Only Use E On Killable Minions", true));
-            laneclear.Add("LEMIN", new Slider("Min Stacks To Use E", 3, 1, 10));
+            laneclear.Add("LEMIN", new Slider("Min Killable Minions To Use E", 3, 1, 10));
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
@@ -403,14 +408,15 @@ namespace T7_Kalista
             draw.Add("drawQ", new CheckBox("Draw Q Range", true));
             draw.Add("drawE", new CheckBox("Draw E Range", true));
             draw.Add("drawR", new CheckBox("Draw R Range", true));
-            draw.Add("drawkillable", new CheckBox("Draw Killable Enemies", false));
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
+            draw.Add("drawpercent", new CheckBox("Draw E Damage %", true));
        
             misc.AddGroupLabel("Killsteal");
             misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
             misc.Add("ksE", new CheckBox("Killsteal with E", true));
-            misc.Add("ksD", new CheckBox("Steal Dragon With E", true));
-            misc.Add("AUTOE2", new CheckBox("Auto Cast E When Running Out Of time", true)); 
+            misc.Add("ksDB", new CheckBox("Steal Dragon/Baron With E", true));
+            misc.Add("ksJ", new CheckBox("Steal Big Jungle Monsters With E", false));
+          //  misc.Add("AUTOE2", new CheckBox("Auto Cast E When Running Out Of time", true)); 
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));         
             misc.AddSeparator();
             misc.AddGroupLabel("Prediction");
