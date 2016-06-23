@@ -34,8 +34,6 @@ namespace T7_Fiora
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
-            // Game.OnUpdate += OnUpdate;
-            // Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
             tiamat = new Item((int)ItemId.Tiamat_Melee_Only, 400);
@@ -513,14 +511,14 @@ namespace T7_Fiora
 
             combo.AddGroupLabel("Spells");
             combo.Add("CQ", new CheckBox("Use Q", true));
-            combo.Add("CQGAP", new CheckBox("Use Q To Gapclose If Enemy Out Of Range", true));
+         //   combo.Add("CQGAP", new CheckBox("Use Q To Gapclose If Enemy Out Of Range", true));
             combo.AddSeparator();
             combo.Add("CW", new CheckBox("Use W", true));
             combo.AddSeparator();
             combo.Add("CE", new CheckBox("Use E", true));
             combo.Add("CERESET", new CheckBox("Only Use E After AA(Reset AA)", true));
             combo.Add("CR", new CheckBox("Use R", true));
-            combo.Add("CRTURRET", new CheckBox("Dont Use R When Close To Enemy Turrets", true));
+            combo.Add("CRTURRET", new CheckBox("Dont Use R When Close To Enemy Turrets", false));
             combo.Add("CRMIN", new Slider("Min % Health To Use R", 35, 1, 99));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
