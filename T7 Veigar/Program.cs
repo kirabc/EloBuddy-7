@@ -18,26 +18,23 @@ namespace Veigarino
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu,combo,harass,laneclear,misc,draw,pred,sequence1,sequence2,sequence3;
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
-
         public static void OnLoad(EventArgs arg)
         {
             DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.3)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.4)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             Gapcloser.OnGapcloser += OnGapcloser;
             DatMenu();
             Game.OnTick += OnTick;
-            
+            Player.LevelSpell(SpellSlot.Q);
         } 
         private static void OnLvlUp(Obj_AI_Base guy ,Obj_AI_BaseLevelUpEventArgs args)
         {
             if (!guy.IsMe) return;
 /*Q>W>E*/   SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.W, SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.W, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.E, SpellSlot.E };
-/*Q>E>W*/   SpellSlot[] sequence2 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
-/*E>Q>W*/   SpellSlot[] sequence3 = { SpellSlot.Unknown, SpellSlot.Q, SpellSlot.E, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.E, SpellSlot.E, SpellSlot.R, SpellSlot.Q, SpellSlot.Q, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.W };
 
             if(misc["autoS"].Cast<CheckBox>().CurrentValue) Player.LevelSpell(sequence1[myhero.Level]);
         } 
@@ -70,26 +67,46 @@ namespace Veigarino
 
             if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) QStack();              
         }
-        private static float ComboDMG(Obj_AI_Base target)
+        private static float ComboDMG(AIHeroClient target)
         {
             if (target != null)
             {
                 float cdmg = 0;
 
-                if (DemSpells.Q.IsReady() && combo["useQ"].Cast<CheckBox>().CurrentValue) { cdmg += myhero.GetSpellDamage(target, SpellSlot.Q); }
-                if (DemSpells.W.IsReady() && combo["useW"].Cast<CheckBox>().CurrentValue) { cdmg += myhero.GetSpellDamage(target, SpellSlot.W); }
+                if (DemSpells.Q.IsReady() && combo["useQ"].Cast<CheckBox>().CurrentValue) { cdmg += QDamage(target); }
+                if (DemSpells.W.IsReady() && combo["useW"].Cast<CheckBox>().CurrentValue) { cdmg += WDamage(target); }
                 if (DemSpells.R.IsReady() && combo["useR"].Cast<CheckBox>().CurrentValue) { cdmg += UltDamage(target); }
 
-           //     if (ignt.Slot != SpellSlot.Unknown && ignt.IsReady() && combo["igntC"].Cast<CheckBox>().CurrentValue) { cdmg += myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite); }
                 return cdmg;
             }
             return 0;
-        } 
-        private static float UltDamage(Obj_AI_Base target)
+        }
+        private static int comb(Menu submenu, string sig)
         {
-            var level = DemSpells.R.Level - 1;           
+            return submenu[sig].Cast<ComboBox>().CurrentValue;
+        }
+        private static float QDamage(Obj_AI_Base target)
+        {
+            var index = DemSpells.Q.Level - 1;
 
-            var damage = new float[] { 175, 250, 325 }[level] + (((100 - target.HealthPercent) * 1.5) / 100) * new float[] { 175, 250, 325 }[level] +
+            var QDamage = new[] {70, 110, 150, 190, 230}[index] +
+                          (0.6f * myhero.FlatMagicDamageMod);
+
+            return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)QDamage);
+        }
+        private static float WDamage(AIHeroClient target)
+        {
+            var index = DemSpells.W.Level - 1;
+
+            var WDamage = new[] { 100, 150, 200, 250, 300 }[index] + myhero.FlatMagicDamageMod;
+
+            return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)WDamage);
+        }
+        private static float UltDamage(AIHeroClient target)
+        {
+            var level = DemSpells.R.Level; 
+
+            var damage = new float[] {0, 175, 250, 325 }[level] + (((100 - target.HealthPercent) * 1.5) / 100) * new float[] {0, 175, 250, 325 }[level] +
                 0.75 * myhero.FlatMagicDamageMod;
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)damage);                  
         }
@@ -99,9 +116,12 @@ namespace Veigarino
 
             if (target != null)
             {
-                if (harass["hQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target))
+                var Qpred = DemSpells.Q.GetPrediction(target);
+                var Wpred = DemSpells.W.GetPrediction(target);
+
+                if (harass["hQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target.Position))
                 {
-                    var Qpred = DemSpells.Q.GetPrediction(target);
+                    
                     switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
                     {
                         case 0:
@@ -116,9 +136,9 @@ namespace Veigarino
                     }
                 }
 
-                if (harass["hW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target))
+                if (harass["hW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target.Position))
                 {
-                    var Wpred = DemSpells.W.GetPrediction(target);
+                    
                     switch (harass["hWm"].Cast<ComboBox>().CurrentValue)
                     {
                         case 0:
@@ -139,7 +159,8 @@ namespace Veigarino
                             DemSpells.W.Cast(target.Position);
                             break;
                         case 2:
-                            if (Wpred.HitChance == HitChance.Immobile || target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(Wpred.CastPosition);
+                            if (Wpred.HitChance == HitChance.Immobile || target.HasBuffOfType(BuffType.Stun))
+                            { DemSpells.W.Cast(Wpred.CastPosition); }
                             break;
 
                     }
@@ -147,8 +168,7 @@ namespace Veigarino
             }                 
         } 
         private static void Combo() 
-        {
-           
+        {          
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
             
             if(target != null)
@@ -156,7 +176,7 @@ namespace Veigarino
                 var Qpred = DemSpells.Q.GetPrediction(target);
                 var Wpred = DemSpells.W.GetPrediction(target);
 
-                if (combo["useQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target))
+                if (combo["useQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target.Position))
                 {
                     switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
                     {
@@ -171,7 +191,7 @@ namespace Veigarino
                             break;
                     }
                 }
-                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && target.Distance(myhero) < DemSpells.E.Range - 30)
+                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && target.Distance(myhero.Position) < DemSpells.E.Range - 30)
                 {
                     switch (combo["Es"].Cast<CheckBox>().CurrentValue)
                     {
@@ -183,7 +203,7 @@ namespace Veigarino
                             break;
                     }
                 }
-                if (combo["useW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target))
+                if (combo["useW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target.Position))
                 {
                     switch (combo["useWs"].Cast<CheckBox>().CurrentValue)
                     {
@@ -206,30 +226,60 @@ namespace Veigarino
                             break;
                     }
                 }
-                if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() && DemSpells.R.IsInRange(target) && ComboDMG(target) > target.Health && UltDamage(target) > target.Health) DemSpells.R.Cast(target);
-
-                if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) > target.Health && ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target,DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
+                if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() &&
+                    DemSpells.R.IsInRange(target.Position) && ComboDMG(target) > target.Health &&
+                    UltDamage(target) > target.Health)
+                {
+                    if ((float)(ComboDMG(target) - UltDamage(target)) > target.Health) return;
+                    DemSpells.R.Cast(target);
+                }
+                if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) < target.Health &&
+                    ignt.IsInRange(target.Position) && myhero.GetSummonerSpellDamage(target,DamageLibrary.SummonerSpells.Ignite) > target.Health &&
+                    !misc["autoign"].Cast<CheckBox>().CurrentValue) ignt.Cast(target);
             }
         } 
         private static void QStack()
         {
-            var farm = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.Health < (myhero.GetSpellDamage(x, SpellSlot.Q) - 15) && x.IsValidTarget() && x.Distance(myhero) < DemSpells.Q.Range - 10);
-                                                                                                                                                                                                                              
-            var FarmPred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(farm, DemSpells.Q.Width, (int)DemSpells.Q.Range);
+            if (!DemSpells.Q.IsReady() || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo)) return;
 
-            switch (laneclear["Qlm"].Cast<ComboBox>().CurrentValue)
-            {
-                case 0:
-                    if (FarmPred.HitNumber >= 1 && !Orbwalker.IsAutoAttacking) DemSpells.Q.Cast(FarmPred.CastPosition);
-                    break;
-                case 1:
-                    if (FarmPred.HitNumber == 2 && !Orbwalker.IsAutoAttacking) DemSpells.Q.Cast(FarmPred.CastPosition);
-                    break;
-                case 2:
-                    var BigMinions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).Where(x => x.BaseSkinName.Contains("Siege") || x.BaseSkinName.Contains("Super") && x.Health <= myhero.GetSpellDamage(x, SpellSlot.Q)- 20);
-                    var BMpred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(BigMinions, DemSpells.Q.Width, (int)DemSpells.Q.Range);
-                    if (BMpred.HitNumber == 1 && !Orbwalker.IsAutoAttacking) DemSpells.Q.Cast(BMpred.CastPosition);
-                    break;
+            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.Q.Range)
+                                                          .OrderBy(x => x.Distance(myhero.Position));
+
+            if (minions != null)
+            {   
+                foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range - 10) && x.Health < QDamage(x) - 10 &&
+                                                     Prediction.Health.GetPrediction(x, (int)(((x.Distance(myhero.Position) / DemSpells.Q.Speed) * 1000) + 250)) > 30))
+                {
+                    var pred = DemSpells.Q.GetPrediction(minion);
+                    var collisions = pred.CollisionObjects.ToList();
+                        
+                    switch(comb(laneclear, "Qlm"))
+                    {
+                        case 0:
+                            if (pred.Collision && collisions.Count() <= 1)
+                            {
+                                DemSpells.Q.Cast(pred.CastPosition);
+
+                            }
+                            else
+                            { 
+                                DemSpells.Q.Cast(pred.CastPosition);
+                            }
+                            break;
+                        case 1:
+                            if (pred.Collision && (collisions.Count() == 1 &&
+                                collisions.FirstOrDefault().Health < QDamage(collisions.FirstOrDefault()) - 10))
+                            {
+                                DemSpells.Q.Cast(pred.CastPosition);
+                            }
+                            else if(collisions.Count() == 2 && collisions[0].Health < QDamage(collisions[0]) - 10 &&
+                                                               collisions[1].Health < QDamage(collisions[1]) - 10)
+                            {
+                                DemSpells.Q.Cast(pred.CastPosition);
+                            }
+                            break;
+                    }                                                                                         
+                }               
             }
         }
         private static void Laneclear()
@@ -264,7 +314,8 @@ namespace Veigarino
                 var Qpred = DemSpells.Q.GetPrediction(target);
                 var Wpred = DemSpells.W.GetPrediction(target);
 
-                if (misc["ksQ"].Cast<CheckBox>().CurrentValue && myhero.GetSpellDamage(target, SpellSlot.Q) > target.Health && target.Distance(myhero) < DemSpells.W.Range && DemSpells.Q.IsReady() && !target.IsInvulnerable)
+                if (misc["ksQ"].Cast<CheckBox>().CurrentValue && QDamage(target) > target.Health &&
+                    DemSpells.W.IsInRange(target.Position) && DemSpells.Q.IsReady() && !target.IsInvulnerable)
                 {
                     if (target.HasBuffOfType(BuffType.Stun)) DemSpells.Q.Cast(target.Position);
                     else
@@ -283,31 +334,33 @@ namespace Veigarino
                         }
                     }
                 }
-                if (misc["ksW"].Cast<CheckBox>().CurrentValue && myhero.GetSpellDamage(target, SpellSlot.W) > target.Health && target.Distance(myhero) < DemSpells.W.Range && DemSpells.W.IsReady() && !target.IsInvulnerable)
+                if (misc["ksW"].Cast<CheckBox>().CurrentValue && WDamage(target) > target.Health &&
+                    DemSpells.W.IsInRange(target.Position) && DemSpells.W.IsReady() && !target.IsInvulnerable)
                 {
 
                     if (Wpred.HitChance == HitChance.Immobile || Wpred.HitChance >= HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
                 }
 
-                if (misc["ksR"].Cast<CheckBox>().CurrentValue && UltDamage(target) > target.Health && DemSpells.R.IsInRange(target) && DemSpells.R.IsReady() && !target.IsInvulnerable) DemSpells.R.Cast(target);
+                if (misc["ksR"].Cast<CheckBox>().CurrentValue && UltDamage(target) > target.Health &&
+                    DemSpells.R.IsInRange(target.Position) && DemSpells.R.IsReady() && !target.IsInvulnerable) DemSpells.R.Cast(target);
 
-                if (misc["autoing"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
+                if (misc["autoing"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ignt.IsInRange(target.Position) &&
+                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
             }
                         
         }
         private static void OnDraw(EventArgs args)
         {
 
-            var color = new ColorBGRA(48, 123, 243, 1);
-            var colorc = new ColorBGRA(48, 123, 243, 0);
             if (draw["drawQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
 
                 if (draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(DemSpells.Q.IsOnCooldown ?  SharpDX.Color.Transparent : SharpDX.Color.Fuchsia, DemSpells.Q.Range, myhero.Position); }
 
                 else if (!draw["nodrawc"].Cast<CheckBox>().CurrentValue) { Circle.Draw(SharpDX.Color.Fuchsia, DemSpells.Q.Range, myhero.Position); }
-                // Drawing.DrawCircle(myhero.Position, DemSpells.Q.Range, DemSpells.Q.IsOnCooldown ? Color.Transparent : Color.SkyBlue);
+
             }
+           
 
             if (draw["drawW"].Cast<CheckBox>().CurrentValue && DemSpells.W.Level > 0 && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
             {
@@ -336,29 +389,46 @@ namespace Veigarino
 
             }
 
-            if (draw["drawAA"].Cast<CheckBox>().CurrentValue && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue) Circle.Draw(SharpDX.Color.LightYellow, myhero.AttackRange, myhero.Position); 
+            if (draw["drawAA"].Cast<CheckBox>().CurrentValue && !myhero.IsDead && !draw["nodraw"].Cast<CheckBox>().CurrentValue)
+            {
+                Circle.Draw(SharpDX.Color.LightYellow, myhero.AttackRange, myhero.Position);
+            }
 
             foreach (var enemy in EntityManager.Heroes.Enemies)
             {
-                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDMG(enemy) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Killable With Combo");
-                else if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue && enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDMG(enemy) + myhero.GetSummonerSpellDamage(enemy,DamageLibrary.SummonerSpells.Ignite) > enemy.Health) Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30, Color.Green, "Combo + Ignite");
+                if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue &&
+                    enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead && ComboDMG(enemy) > enemy.Health)
+                {
+                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30,
+                                     Color.Green, "Killable With Combo");
+                }
+                else if (draw["drawk"].Cast<CheckBox>().CurrentValue && !draw["nodraw"].Cast<CheckBox>().CurrentValue &&
+                         enemy.IsVisible && enemy.IsHPBarRendered && !enemy.IsDead &&
+                            ComboDMG(enemy) + myhero.GetSummonerSpellDamage(enemy, DamageLibrary.SummonerSpells.Ignite) > enemy.Health)
+                {
+                    Drawing.DrawText(Drawing.WorldToScreen(enemy.Position).X, Drawing.WorldToScreen(enemy.Position).Y - 30,
+                                     Color.Green, "Combo + Ignite");
+
+                }
             }
 
             if (draw["drawStacks"].Cast<CheckBox>().CurrentValue)
             {
-                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10, Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10,
+                                 Color.Red, laneclear["Qlk"].Cast<KeyBind>().CurrentValue ? "Auto Stacking: ON" : "Auto Stacking: OFF");
             }
 
             if(draw["drawStackCount"].Cast<CheckBox>().CurrentValue)
             {
-                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 25, Drawing.WorldToScreen(myhero.Position).Y + 25, Color.Red, "Count: " + myhero.GetBuffCount("veigarphenomenalevilpower").ToString());
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 25, Drawing.WorldToScreen(myhero.Position).Y + 25,
+                                 Color.Red, "Count: " + myhero.GetBuffCount("veigarphenomenalevilpower").ToString());
             }
 
-        }
-
+        } 
         private static void OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
         {
-            if (sender != null && sender.IsEnemy && DemSpells.E.IsInRange(sender) && DemSpells.E.IsReady() && sender.IsValidTarget() && misc["gapmode"].Cast<ComboBox>().CurrentValue != 0)
+            if (sender != null && sender.IsEnemy && DemSpells.E.IsInRange(sender.Position) && DemSpells.E.IsReady() && 
+                sender.IsValidTarget() && misc["gapmode"].Cast<ComboBox>().CurrentValue != 0)
             {
                 var gpred = DemSpells.E.GetPrediction(sender);
                 switch (misc["gapmode"].Cast<ComboBox>().CurrentValue)
@@ -388,7 +458,7 @@ namespace Veigarino
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Veigar And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.3 31/5/2016");
+            menu.AddGroupLabel("Version 1.4 25/6/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -421,7 +491,7 @@ namespace Veigarino
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Q Stacking");
             laneclear.Add("Qlk", new KeyBind("Auto Stacking",true,KeyBind.BindTypes.PressToggle,'F'));
-            laneclear.Add("Qlm",new ComboBox("Select Mode",1,"LastHit 1 Minion","LastHit 2 Minions","LastHit Only Big Minions"));
+            laneclear.Add("Qlm", new ComboBox("Select Mode", 0, "LastHit 1 Minion", "LastHit 2 Minions"));
             laneclear.AddSeparator();
             laneclear.AddGroupLabel("Min W Minions");
             laneclear.Add("Wmm", new Slider("Min minions to use W", 2, 1, 6));
