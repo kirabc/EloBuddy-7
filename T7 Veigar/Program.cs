@@ -20,9 +20,9 @@ namespace Veigarino
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         public static void OnLoad(EventArgs arg)
         {
-            DemSpells.Q.AllowedCollisionCount = 1;
+         //   DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.4)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.5)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -41,9 +41,7 @@ namespace Veigarino
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
-
-            Misc();
-
+           
             var flags = Orbwalker.ActiveModesFlags;
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo))
@@ -51,21 +49,23 @@ namespace Veigarino
                 Combo();
             }
 
-            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) || harass["autoH"].Cast<CheckBox>().CurrentValue && myhero.ManaPercent > harass["minMH"].Cast<Slider>().CurrentValue)
+            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) || check(harass, "autoH") && myhero.ManaPercent > slider(harass, "minMH"))
             {
                 Harass();
             }
-            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) || laneclear["AutoL"].Cast<CheckBox>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent)
+            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) || check(laneclear, "AutoL") && slider(laneclear, "LcM") <= myhero.ManaPercent)
             {
                 Laneclear();
             }
 
-            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) || laneclear["AutoL"].Cast<CheckBox>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent)
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) || check(laneclear, "AutoL") && slider(laneclear, "LcM") <= myhero.ManaPercent)
             {
                 Laneclear();
             }
 
-            if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && laneclear["LcM"].Cast<Slider>().CurrentValue <= myhero.ManaPercent) QStack();              
+            if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && slider(laneclear, "LcM") <= myhero.ManaPercent) QStack();
+
+            Misc();
         }
         private static float ComboDMG(AIHeroClient target)
         {
@@ -84,6 +84,14 @@ namespace Veigarino
         private static int comb(Menu submenu, string sig)
         {
             return submenu[sig].Cast<ComboBox>().CurrentValue;
+        }
+        private static bool check(Menu submenu, string sig)
+        {
+            return submenu[sig].Cast<CheckBox>().CurrentValue;
+        }
+        private static int slider(Menu submenu, string sig)
+        {
+            return submenu[sig].Cast<Slider>().CurrentValue;
         }
         private static float QDamage(Obj_AI_Base target)
         {
@@ -119,50 +127,22 @@ namespace Veigarino
                 var Qpred = DemSpells.Q.GetPrediction(target);
                 var Wpred = DemSpells.W.GetPrediction(target);
 
-                if (harass["hQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target.Position))
+                if (check(combo, "useQ") && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range) && !target.IsZombie
+                    && !target.IsInvulnerable)
                 {
-                    
-                    switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
+                    if (!Qpred.Collision || Qpred.CollisionObjects.Count() < 2)
                     {
-                        case 0:
-                            if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
-                            break;
-                        case 1:
-                            if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
-                            break;
-                        case 2:
-                            if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
-                            break;
+                        DemSpells.Q.Cast(Qpred.CastPosition);
                     }
                 }
 
-                if (harass["hW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target.Position))
+                if (check(combo, "useW") && DemSpells.W.IsReady() && target.IsValidTarget(DemSpells.W.Range) && !target.IsZombie
+                    && !target.IsInvulnerable)
                 {
-                    
-                    switch (harass["hWm"].Cast<ComboBox>().CurrentValue)
+                    if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
+                        (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
                     {
-                        case 0:
-                            switch (pred["Whit"].Cast<ComboBox>().CurrentValue)
-                            {
-                                case 0:
-                                    if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
-                                    break;
-                                case 1:
-                                    if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
-                                    break;
-                                case 2:
-                                    if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
-                                    break;
-                            }
-                            break;
-                        case 1:
-                            DemSpells.W.Cast(target.Position);
-                            break;
-                        case 2:
-                            if (Wpred.HitChance == HitChance.Immobile || target.HasBuffOfType(BuffType.Stun))
-                            { DemSpells.W.Cast(Wpred.CastPosition); }
-                            break;
-
+                        DemSpells.W.Cast(Wpred.CastPosition);
                     }
                 }
             }                 
@@ -175,67 +155,78 @@ namespace Veigarino
             { 
                 var Qpred = DemSpells.Q.GetPrediction(target);
                 var Wpred = DemSpells.W.GetPrediction(target);
+                var Epred = DemSpells.E.GetPrediction(target);
 
-                if (combo["useQ"].Cast<CheckBox>().CurrentValue && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target.Position))
+                if (check(combo, "useQ") && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range) && !target.IsZombie
+                    && !target.IsInvulnerable)
                 {
-                    switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
+                    if (!Qpred.Collision || Qpred.CollisionObjects.Count() < 2)
+                    {
+                        DemSpells.Q.Cast(Qpred.CastPosition);
+                    }
+                }
+
+                if (check(combo, "useE") && DemSpells.E.IsReady() && target.IsValidTarget(DemSpells.E.Range - 30) && !target.IsZombie
+                    && !target.IsInvulnerable)
+                {
+                    if (check(combo, "Es") && target.HasBuffOfType(BuffType.Stun)) return;
+                    switch(comb(combo, "CEMODE"))
                     {
                         case 0:
-                            if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
+                            if (Epred.HitChancePercent >= slider(pred, "Ehit")) DemSpells.E.Cast(Epred.CastPosition);
                             break;
-                        case 1:
-                            if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
+                        case 1:                          
+                            if (Wpred.HitChancePercent >= slider(pred, "Whit"))
+                            {
+                                switch(target.IsFleeing)
+                                {
+                                    case true:
+                                        DemSpells.E.Cast(Wpred.CastPosition.Shorten(myhero.Position, DemSpells.E.Radius / 2));
+                                        break;
+                                    case false:
+                                        DemSpells.E.Cast(Wpred.CastPosition.Extend(myhero.Position, DemSpells.E.Radius / 2).To3D());
+                                        break;
+                                }
+                            }
                             break;
                         case 2:
-                            if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
-                            break;
-                    }
-                }
-                if (combo["useE"].Cast<CheckBox>().CurrentValue && DemSpells.E.IsReady() && target.Distance(myhero.Position) < DemSpells.E.Range - 30)
-                {
-                    switch (combo["Es"].Cast<CheckBox>().CurrentValue)
-                    {
-                        case false:
-                            DemSpells.E.Cast(target.Position);
-                            break;
-                        case true:
-                            if (!target.HasBuffOfType(BuffType.Stun)) DemSpells.E.Cast(target.Position);
-                            break;
-                    }
-                }
-                if (combo["useW"].Cast<CheckBox>().CurrentValue && DemSpells.W.IsReady() && DemSpells.W.IsInRange(target.Position))
-                {
-                    switch (combo["useWs"].Cast<CheckBox>().CurrentValue)
-                    {
-                        case true:
-                            if (target.HasBuffOfType(BuffType.Stun)) DemSpells.W.Cast(target.Position);
-                            break;
-                        case false:
-                            switch (pred["Whit"].Cast<ComboBox>().CurrentValue)
+                            if (myhero.CountEnemiesInRange(DemSpells.E.Range + 170) >= slider(combo, "CEAOE"))
                             {
-                                case 0:
-                                    if (Wpred.HitChance == HitChance.Low) DemSpells.W.Cast(Wpred.CastPosition);
-                                    break;
-                                case 1:
-                                    if (Wpred.HitChance == HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
-                                    break;
-                                case 2:
-                                    if (Wpred.HitChance == HitChance.High) DemSpells.W.Cast(Wpred.CastPosition);
-                                    break;
+                                foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid && !x.IsAlly &&
+                                                                                         x.Distance(myhero.Position) <= DemSpells.E.Range))
+                                {
+                                    if (enemy.CountEnemiesInRange(175) >= slider(combo, "CEAOE")) DemSpells.E.Cast(enemy.Position);
+                                }
+                            }
+                            else
+                            {
+                                goto case 0;
                             }
                             break;
                     }
                 }
-                if (combo["useR"].Cast<CheckBox>().CurrentValue && DemSpells.R.IsReady() &&
+
+                if (check(combo, "useW") && DemSpells.W.IsReady() && target.IsValidTarget(DemSpells.W.Range) && !target.IsZombie
+                    && !target.IsInvulnerable)
+                {
+                    if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
+                        (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
+                    {
+                        DemSpells.W.Cast(Wpred.CastPosition);
+                    }                         
+                }
+
+                if (check(combo, "useR") && DemSpells.R.IsReady() &&
                     DemSpells.R.IsInRange(target.Position) && ComboDMG(target) > target.Health &&
-                    UltDamage(target) > target.Health)
+                    UltDamage(target) > target.Health && !target.HasBuffOfType(BuffType.SpellImmunity) && !target.IsInvulnerable && !target.HasUndyingBuff())
                 {
                     if ((float)(ComboDMG(target) - UltDamage(target)) > target.Health) return;
                     DemSpells.R.Cast(target);
                 }
-                if (combo["igntC"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ComboDMG(target) < target.Health &&
+
+                if (check(combo, "igntC") && ignt.IsReady() && ComboDMG(target) < target.Health &&
                     ignt.IsInRange(target.Position) && myhero.GetSummonerSpellDamage(target,DamageLibrary.SummonerSpells.Ignite) > target.Health &&
-                    !misc["autoign"].Cast<CheckBox>().CurrentValue) ignt.Cast(target);
+                    !misc["autoign"].Cast<CheckBox>().CurrentValue && !target.HasUndyingBuff()) ignt.Cast(target);
             }
         } 
         private static void QStack()
@@ -286,25 +277,25 @@ namespace Veigarino
         {
             var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range);
 
-            if (laneclear["LQ"].Cast<CheckBox>().CurrentValue  && DemSpells.Q.IsReady() && !laneclear["Qlk"].Cast<KeyBind>().CurrentValue)
+            if (check(laneclear, "LQ")  && DemSpells.Q.IsReady() && !laneclear["Qlk"].Cast<KeyBind>().CurrentValue)
             {             
                    var Qpred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(minion, DemSpells.Q.Width, (int)DemSpells.Q.Range);
 
                    if (Qpred.HitNumber >= 1) DemSpells.Q.Cast(Qpred.CastPosition);
             }
 
-            if (laneclear["LW"].Cast<CheckBox>().CurrentValue && minion != null && DemSpells.W.IsReady())
+            if (check(laneclear, "LW") && minion != null && DemSpells.W.IsReady())
             {
                 var Wpred = EntityManager.MinionsAndMonsters.GetCircularFarmLocation(minion, DemSpells.W.Width, (int)DemSpells.W.Range);
 
-                if (Wpred.HitNumber >= laneclear["Wmm"].Cast<Slider>().CurrentValue) DemSpells.W.Cast(Wpred.CastPosition);
+                if (Wpred.HitNumber >= slider(laneclear, "Wmm")) DemSpells.W.Cast(Wpred.CastPosition);
             }      
         } 
         private static void Misc()
         {
-            if (misc["sh"].Cast<CheckBox>().CurrentValue)
+            if (check(misc, "sh"))
             {
-                myhero.SetSkinId((int)misc["sID"].Cast<ComboBox>().CurrentValue);
+                myhero.SetSkinId(comb(misc, "sID"));
             }
 
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
@@ -314,40 +305,49 @@ namespace Veigarino
                 var Qpred = DemSpells.Q.GetPrediction(target);
                 var Wpred = DemSpells.W.GetPrediction(target);
 
-                if (misc["ksQ"].Cast<CheckBox>().CurrentValue && QDamage(target) > target.Health &&
-                    DemSpells.W.IsInRange(target.Position) && DemSpells.Q.IsReady() && !target.IsInvulnerable)
+                if (check(misc, "ksQ") && QDamage(target) > target.Health && !target.HasUndyingBuff() &&
+                    target.IsValidTarget(DemSpells.Q.Range - 10) && DemSpells.Q.IsReady() && !target.IsInvulnerable)
                 {
-                    if (target.HasBuffOfType(BuffType.Stun)) DemSpells.Q.Cast(target.Position);
-                    else
+                    if (target.HasBuffOfType(BuffType.Stun) ||
+                        Qpred.HitChancePercent >= slider(pred, "Qhit"))
                     {
-                        switch (pred["Qhit"].Cast<ComboBox>().CurrentValue)
-                        {
-                            case 0:
-                                if (Qpred.HitChance >= HitChance.Low) DemSpells.Q.Cast(Qpred.CastPosition);
-                                break;
-                            case 1:
-                                if (Qpred.HitChance >= HitChance.Medium) DemSpells.Q.Cast(Qpred.CastPosition);
-                                break;
-                            case 2:
-                                if (Qpred.HitChance >= HitChance.High) DemSpells.Q.Cast(Qpred.CastPosition);
-                                break;
-                        }
+                        DemSpells.Q.Cast(target.Position);
                     }
                 }
-                if (misc["ksW"].Cast<CheckBox>().CurrentValue && WDamage(target) > target.Health &&
-                    DemSpells.W.IsInRange(target.Position) && DemSpells.W.IsReady() && !target.IsInvulnerable)
+                if (check(misc, "ksW") && WDamage(target) > target.Health && !target.HasUndyingBuff() &&
+                    target.IsValidTarget(DemSpells.W.Range) && DemSpells.W.IsReady() && !target.IsInvulnerable)
                 {
 
-                    if (Wpred.HitChance == HitChance.Immobile || Wpred.HitChance >= HitChance.Medium) DemSpells.W.Cast(Wpred.CastPosition);
+                    if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
+                        (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
+                    {
+                        DemSpells.W.Cast(Wpred.CastPosition);
+                    }
                 }
 
-                if (misc["ksR"].Cast<CheckBox>().CurrentValue && UltDamage(target) > target.Health &&
-                    DemSpells.R.IsInRange(target.Position) && DemSpells.R.IsReady() && !target.IsInvulnerable) DemSpells.R.Cast(target);
+                if (check(misc, "ksR") && UltDamage(target) > target.Health &&
+                    target.IsValidTarget(DemSpells.R.Range) && DemSpells.R.IsReady() &&
+                    !target.IsInvulnerable && !target.HasUndyingBuff() && !target.HasBuffOfType(BuffType.SpellImmunity))
+                {
+                    switch (target.HasBuffOfType(BuffType.SpellShield))
+                    {
+                        case true:
+                            if ((target.MagicShield + target.Health) < UltDamage(target)) DemSpells.R.Cast(target);
+                            else break;
+                            break;
+                        case false:
+                            DemSpells.R.Cast(target);
+                            break;
+                    }
+                }
 
-                if (misc["autoing"].Cast<CheckBox>().CurrentValue && ignt.IsReady() && ignt.IsInRange(target.Position) &&
-                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
-            }
-                        
+                if (check(misc, "autoign") && ignt.IsReady() && target.IsValidTarget(ignt.Range) &&
+                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health &&
+                    !target.IsInvulnerable && !target.HasUndyingBuff())
+                {
+                    ignt.Cast(target);
+                }
+            }               
         }
         private static void OnDraw(EventArgs args)
         {
@@ -458,48 +458,50 @@ namespace Veigarino
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Veigar And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.4 25/6/2016");
-            menu.AddGroupLabel("Author: Toyota7");
+            menu.AddLabel("Version 1.5 26/6/2016");
+            menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
-            menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
+            menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
 
             combo.AddGroupLabel("Spells");
             combo.Add("useQ", new CheckBox("Use Q in Combo",true)); 
             combo.Add("useW", new CheckBox("Use W in Combo",true));
             combo.Add("useE", new CheckBox("Use E in Combo",true));
             combo.Add("useR", new CheckBox("Use R in Combo",true));
-            combo.Add("igntC", new CheckBox("Use Ignite", false));
+            combo.Add("igntC", new CheckBox("Use Ignite", true));
             combo.AddSeparator();
+            combo.AddLabel("E Options:");
+            combo.Add("CEMODE", new ComboBox("E Mode: ", 0, "Target On The Center", "Target On The Edge(stun)","AOE"));
+            combo.Add("CEAOE", new Slider("Min Champs For AOE Function", 2, 1, 5));
             combo.Add("Es", new CheckBox("Dont Use E On Immobile Enemies",true));
-            combo.Add("useWs", new CheckBox("Use W Only On Stunned Enemies", true));
             
             harass.AddGroupLabel("Spells");
             harass.Add("hQ", new CheckBox("Use Q",true));
             harass.Add("hW", new CheckBox("Use W",false));
-            harass.AddGroupLabel("W Mode:");
+            harass.AddLabel("W Mode:");
             harass.Add("hWm", new ComboBox("Select Mode",2,"With Prediciton","Without Prediction(Not Recommended)","Only On Stunned Enemies"));
             harass.AddSeparator();
-            harass.AddGroupLabel("Min Mana To Harass");
+            harass.AddLabel("Min Mana To Harass");
             harass.Add("minMH", new Slider("Stop Harass At % Mana", 40, 0, 100));
             harass.AddSeparator();
-            harass.AddGroupLabel("Auto Harass");
+            harass.AddLabel("Auto Harass");
             harass.Add("autoH", new CheckBox(" Use Auto harass", false));
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q",true)); 
             laneclear.Add("LW", new CheckBox("Use W",false));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Q Stacking");
+            laneclear.AddLabel("Q Stacking");
             laneclear.Add("Qlk", new KeyBind("Auto Stacking",true,KeyBind.BindTypes.PressToggle,'F'));
             laneclear.Add("Qlm", new ComboBox("Select Mode", 0, "LastHit 1 Minion", "LastHit 2 Minions"));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Min W Minions");
+            laneclear.AddLabel("Min W Minions");
             laneclear.Add("Wmm", new Slider("Min minions to use W", 2, 1, 6));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Stop Laneclear At % Mana");
+            laneclear.AddLabel("Stop Laneclear At % Mana");
             laneclear.Add("LcM", new Slider("%", 50, 0, 100));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Auto Laneclear");
+            laneclear.AddLabel("Auto Laneclear");
             laneclear.Add("AutoL", new CheckBox("Auto Laneclear", false));
 
             draw.Add("nodraw", new CheckBox("Disable All Drawings",false)); 
@@ -508,6 +510,7 @@ namespace Veigarino
             draw.Add("drawW", new CheckBox("Draw W Range",true));
             draw.Add("drawE", new CheckBox("Draw E Range",true));
             draw.Add("drawR", new CheckBox("Draw R Range",true));
+            draw.AddSeparator();
             draw.Add("drawAA", new CheckBox("Draw AA Range",false));
             draw.Add("drawk", new CheckBox("Draw Killable Enemies",false));
             draw.Add("nodrawc", new CheckBox("Draw Only Ready Spells",false));
@@ -518,7 +521,8 @@ namespace Veigarino
             misc.Add("ksQ", new CheckBox("Killsteal with Q",false));
             misc.Add("ksW", new CheckBox("Killsteal with W(With Prediction)",false));
             misc.Add("ksR", new CheckBox("Killsteal with R",false));
-            misc.Add("autoing", new CheckBox("Auto Ignite If Killable", false));
+            misc.Add("autoign", new CheckBox("Auto Ignite If Killable", false));
+            misc.AddSeparator();
             misc.AddGroupLabel("Gapcloser");
             misc.Add("gapmode", new ComboBox("Use E On Gapcloser                                               Mode:", 2, "Off","Self","Enemy(Pred)"));
             misc.AddSeparator();
@@ -531,13 +535,13 @@ namespace Veigarino
 
 
             pred.AddGroupLabel("Q HitChance");
-            pred.Add("Qhit",new ComboBox("Selecte Hitchance",1,"Low","Medium","High"));
+            pred.Add("Qhit",new Slider("% Hitchance",85,0,100));
             pred.AddSeparator();
             pred.AddGroupLabel("W HitChance");
-            pred.Add("Whit", new ComboBox("Selecte Hitchance", 1, "Low", "Medium", "High"));
+            pred.Add("Whit", new Slider("% Hitchance",85,0,100));
             pred.AddSeparator();
             pred.AddGroupLabel("E HitChance");
-            pred.Add("Ehit", new Slider("% Hitchance",85,1,100));
+            pred.Add("Ehit", new Slider("% Hitchance",85,0,100));
                 
         }          
     }
