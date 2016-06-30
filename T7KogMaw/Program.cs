@@ -275,7 +275,7 @@ namespace T7_KogMaw
                 var epred = DemSpells.E.GetPrediction(target);
 
                 if (check(harass, "HQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range - 10) &&
-                    qpred.HitChancePercent >= slider(pred, "Qpred"))
+                    qpred.HitChancePercent >= slider(pred, "QPred"))
                 {
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
