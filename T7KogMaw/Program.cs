@@ -388,7 +388,7 @@ namespace T7_KogMaw
                     myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
 
                 foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
-                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range && RDamage(monster) > monster.Health)))
+                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range && RDamage(x) > x.Health)))
                 {
                     var pred = DemSpells.R.GetPrediction(monster);
                     if (pred.HitChancePercent >= 80) DemSpells.R.Cast(monster);
