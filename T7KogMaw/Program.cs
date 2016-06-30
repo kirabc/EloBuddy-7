@@ -47,7 +47,6 @@ namespace T7_KogMaw
             if (myhero.IsDead) return;
 
             var flags = Orbwalker.ActiveModesFlags;
-          //  Chat.Print(Player.Instance.Spellbook.GetSpell(SpellSlot.R).SData.ManaCostArray[1]);
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo)) { Combo(); }
 
