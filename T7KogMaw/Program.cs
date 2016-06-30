@@ -391,7 +391,7 @@ namespace T7_KogMaw
                                                                                             x.Health > 50 && x.IsValidTarget(DemSpells.R.Range)))
                 {
                     var pred = DemSpells.R.GetPrediction(monster);
-                    if (pred.HitChancePercent >= 80) DemSpells.R.Cast(monster);
+                    if (pred.HitChancePercent >= 80 && RDamage(monster) > monster.Health) DemSpells.R.Cast(monster);
                 }
             }
         }
