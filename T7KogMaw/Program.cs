@@ -287,7 +287,7 @@ namespace T7_KogMaw
                 }
 
                 if (check(harass, "HE") && DemSpells.E.IsLearned && DemSpells.E.IsReady() &&
-                    epred.CollisionObjects.Where(x => !x.IsDead && !x.IsAlly && x is AIHeroClient).Count() >= slider(pred, "HEMIN"))
+                    epred.CollisionObjects.Where(x => !x.IsDead && !x.IsAlly && x is AIHeroClient).Count() >= slider(harass, "HEMIN"))
                 {
                     DemSpells.E.Cast(epred.CastPosition);
                 }
