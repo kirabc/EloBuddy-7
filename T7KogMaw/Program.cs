@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
@@ -38,7 +38,7 @@ namespace T7_KogMaw
             Game.OnTick += OnTick;
             cutl = new Item((int)ItemId.Bilgewater_Cutlass, 550);
             blade = new Item((int)ItemId.Blade_of_the_Ruined_King, 550);
-            potion = new Item((int)ItemId.Health_Potion);
+            potion = new Item(2003, 0);
             Player.LevelSpell(SpellSlot.W);
         }
 
@@ -51,11 +51,11 @@ namespace T7_KogMaw
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo)) { Combo(); }
 
-            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > slider(harass, "HMIN")) Harass();
+            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > slider(harass, "HMIN")) { Harass(); }
 
-            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > slider(laneclear, "LMIN")) Laneclear();
+            if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > slider(laneclear, "LMIN")) { Laneclear(); }
 
-            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > slider(jungleclear, "JMIN")) Jungleclear();
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > slider(jungleclear, "JMIN")) { Jungleclear(); }
 
             Misc();
 
@@ -331,45 +331,69 @@ namespace T7_KogMaw
 
         private static void Jungleclear()
         {
-            var Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters();
+            var Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1800f);
 
             if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
             {
-                if (check(jungleclear, "JQMODE"))
-                     Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini"));
-
-                DemSpells.Q.Cast(Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30)
-                                         .OrderByDescending(x => x.Health)
-                                         .FirstOrDefault().Position);
+                switch(comb(jungleclear, "JQMODE"))
+                {
+                    case 0:
+                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30))
+                        {
+                            DemSpells.Q.Cast(monster.Position);
+                        }
+                        break;
+                    case 1:
+                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30 &&
+                                                                    !x.Name.ToLower().Contains("mini")))
+                        {
+                            var pred = DemSpells.Q.GetPrediction(monster);
+                            if (!pred.Collision) DemSpells.Q.Cast(pred.CastPosition);
+                        }
+                        break;
+                }
             }
 
-            if (check(jungleclear, "JW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && 
-                Monsters.Where(x => x.Distance(myhero.Position) < new[] {0, 590, 620, 650, 680, 710 }[DemSpells.W.Level])
-                        .Count() >= slider(jungleclear, "JWMIN"))
+            if (check(jungleclear, "JW") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
             {
-                DemSpells.W.Cast();
+                int count = Monsters.Where(x => x.Distance(myhero.Position) < (new[] { 0, 590, 620, 650, 680, 710 }[DemSpells.W.Level]))
+                                    .Count();
+
+                if (count >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast();
             }
 
             if (check(jungleclear, "JE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
             {
-                if (check(jungleclear, "JEMODE"))
-                      Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini"));
-
-                DemSpells.E.Cast(Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30)
-                                         .OrderByDescending(x => x.Health)
-                                         .FirstOrDefault().Position);
+                switch (comb(jungleclear, "JEMODE"))
+                {
+                    case 0:
+                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30))
+                        {
+                            DemSpells.E.Cast(monster.Position);
+                        }
+                        break;
+                    case 1:
+                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30 &&
+                                                                    !x.Name.ToLower().Contains("mini")))
+                        {
+                            var pred = DemSpells.E.GetPrediction(monster);
+                            if (pred.HitChancePercent >= 80) DemSpells.E.Cast(pred.CastPosition);
+                        }
+                        break;
+                }
             }
 
-            if (check(jungleclear, "JR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
-            {
-                Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
-                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range))
-                                                                               .OrderBy(x => x.Health);
-
+           if (check(jungleclear, "JR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
+           {
                 if (myhero.HasBuff("kogmawlivingartillerycost") &&
                     myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
 
-                DemSpells.R.Cast(Monsters.FirstOrDefault().Position);
+                foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
+                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range)))
+                {
+                    var pred = DemSpells.R.GetPrediction(monster);
+                    if (pred.HitChancePercent >= 80) DemSpells.R.Cast(monster);
+                }
             }
         }
 
@@ -429,7 +453,7 @@ namespace T7_KogMaw
                     }
                 }
 
-                if (check(misc, "AUTOPOT") && potion.IsOwned() && potion.IsReady() && !myhero.HasBuff("RegenerationPotion") && 
+                if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") && 
                     myhero.HealthPercent <= slider(misc,"POTMIN"))
                 {
                     potion.Cast();
