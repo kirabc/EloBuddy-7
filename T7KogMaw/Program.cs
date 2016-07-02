@@ -3,6 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
 using EloBuddy.SDK;
+using EloBuddy.SDK.ThirdParty;
+
 using EloBuddy.SDK.Enumerations;
 using EloBuddy.SDK.Events;
 using EloBuddy.SDK.Menu;
@@ -21,7 +23,7 @@ namespace T7_KogMaw
         private static Menu menu, combo, harass, laneclear, misc, draw, pred, jungleclear;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         private static Spell.Targeted smite = new Spell.Targeted(myhero.GetSpellSlotFromName("summonersmite"), 500);
-        private static Vector3 DragonLocation , BaronLocation;
+        private static Vector3 DragonLocation, BaronLocation;
         public static Item cutl { get; private set; }
         public static Item blade { get; private set; }
         public static Item potion { get; private set; }
@@ -38,7 +40,7 @@ namespace T7_KogMaw
             Game.OnTick += OnTick;
             cutl = new Item((int)ItemId.Bilgewater_Cutlass, 550);
             blade = new Item((int)ItemId.Blade_of_the_Ruined_King, 550);
-            potion = new Item(2003, 0);
+            potion = new Item((int)ItemId.Health_Potion);
             Player.LevelSpell(SpellSlot.W);
         }
 
@@ -81,11 +83,11 @@ namespace T7_KogMaw
             if (!sender.IsMe) return;
 
             /*Q>W>E*/
-            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.Q, SpellSlot.Q,
-                                        SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.W, 
-                                        SpellSlot.Q, SpellSlot.W, SpellSlot.R, SpellSlot.W, 
-                                        SpellSlot.W, SpellSlot.E, SpellSlot.E, SpellSlot.R, 
-                                        SpellSlot.E , SpellSlot.E };
+            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.Unknown, SpellSlot.E, SpellSlot.Q, SpellSlot.W,
+                                        SpellSlot.W, SpellSlot.R, SpellSlot.W, SpellSlot.E, 
+                                        SpellSlot.W, SpellSlot.E, SpellSlot.R, SpellSlot.E, 
+                                        SpellSlot.E, SpellSlot.Q, SpellSlot.Q, SpellSlot.R, 
+                                        SpellSlot.Q , SpellSlot.Q };
 
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
         }
@@ -98,11 +100,11 @@ namespace T7_KogMaw
 
                 if (DemSpells.Q.IsLearned && DemSpells.Q.IsReady()) { TotalDamage += QDamage(target); }
 
-          //      if (DemSpells.W.IsLearned && DemSpells.W.IsReady()) { TotalDamage +=  }
-                
+                //      if (DemSpells.W.IsLearned && DemSpells.W.IsReady()) { TotalDamage +=  }
+
                 if (DemSpells.E.IsLearned && DemSpells.E.IsReady()) { TotalDamage += EDamage(target); }
 
-                if (DemSpells.R.IsLearned && DemSpells.R.IsReady()) { TotalDamage += (RDamage(target) * slider(combo,"CRMAX")); }
+                if (DemSpells.R.IsLearned && DemSpells.R.IsReady()) { TotalDamage += (RDamage(target) * slider(combo, "CRMAX")); }
 
                 if (cutl.IsOwned() && cutl.IsReady() && cutl.IsInRange(target.Position))
                 { TotalDamage += myhero.GetItemDamage(target, cutl.Id); }
@@ -135,7 +137,7 @@ namespace T7_KogMaw
         {
             int index = DemSpells.E.Level - 1;
 
-            var EDamage = new[] {60, 110, 160, 210, 260}[index] + (0.7f * myhero.FlatMagicDamageMod);
+            var EDamage = new[] { 60, 110, 160, 210, 260 }[index] + (0.7f * myhero.FlatMagicDamageMod);
 
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, EDamage);
 
@@ -216,8 +218,8 @@ namespace T7_KogMaw
         {
             var target = TargetSelector.GetTarget(2000, DamageType.Physical, Player.Instance.Position);
 
-            if (target != null && !target.IsInvulnerable)
-            {               
+            if (target != null)
+            {
                 ItemManager(target);
                 var qpred = DemSpells.Q.GetPrediction(target);
                 var epred = DemSpells.E.GetPrediction(target);
@@ -229,7 +231,7 @@ namespace T7_KogMaw
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-                if (check(combo, "CW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && target.IsValidTarget(new[] {0, 590, 620, 650, 680, 710 }[DemSpells.W.Level]))
+                if (check(combo, "CW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && target.IsValidTarget(new[] { 0, 590, 620, 650, 680, 710 }[DemSpells.W.Level]))
                 {
                     DemSpells.W.Cast();
                 }
@@ -240,14 +242,17 @@ namespace T7_KogMaw
                     DemSpells.E.Cast(epred.CastPosition);
                 }
 
-                if (check(combo, "CR") && DemSpells.R.IsLearned && DemSpells.R.IsReady() && target.IsValidTarget(DemSpells.R.Range) && ComboDamage(target) > target.Health &&
+                if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) && ComboDamage(target) > target.Health &&
                    rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff())
                 {
-                    if ( myhero.HasBuff("kogmawlivingartillerycost") &&
+                    if (myhero.HasBuff("kogmawlivingartillerycost") &&
                          myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
 
+                  /*  if (slider(combo, "CRDELAY") > 0 && DemSpells.R.IsReady((uint)slider(combo, "CRDELAY"))) DemSpells.R.Cast(rpred.CastPosition);
+                    else if (slider(combo, "CRDELAY") == 0 && DemSpells.R.IsReady()) DemSpells.R.Cast(rpred.CastPosition);*/
                     DemSpells.R.Cast(rpred.CastPosition);
                 }
+
 
                 if (check(combo, "Cignt") && ignt.IsReady() && ignt.IsInRange(target.Position))
                 {
@@ -296,17 +301,19 @@ namespace T7_KogMaw
 
         private static void Laneclear()
         {
-            
-            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).ToList();
+
+            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).ToArray();
 
             if (minions != null)
             {
                 var epred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(minions, DemSpells.E.Width, 1200);
+                var rpred = EntityManager.MinionsAndMonsters.GetCircularFarmLocation(minions, 120, 1750);
+   
 
                 if (check(laneclear, "LQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
                 {
                     foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && myhero.GetSpellDamage(x, SpellSlot.Q) > x.Health + 10 &&
-                                                         Prediction.Health.GetPrediction(x,(int)((x.Distance(myhero.Position) / DemSpells.Q.Speed) * 1000)) > 30))
+                                                         Prediction.Health.GetPrediction(x, (int)((x.Distance(myhero.Position) / DemSpells.Q.Speed) * 1000)) > 30))
                     {
                         var qpred = DemSpells.Q.GetPrediction(minion);
 
@@ -314,17 +321,24 @@ namespace T7_KogMaw
                     }
                 }
 
-                if(check(laneclear, "LW") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
+                if (check(laneclear, "LW") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
                 {
                     int count = minions.Where(x => !x.IsDead && x.IsValidTarget(myhero.AttackRange) && x.Health > 20).Count();
 
                     if (count >= slider(laneclear, "LWMIN")) DemSpells.W.Cast();
                 }
 
-                if(check(laneclear, "LE") && DemSpells.E.IsLearned && DemSpells.E.IsReady() && epred.HitNumber >= slider(laneclear, "LEMIN"))
+                if (check(laneclear, "LE") && DemSpells.E.IsLearned && DemSpells.E.IsReady() && epred.HitNumber >= slider(laneclear, "LEMIN"))
                 {
                     DemSpells.E.Cast(epred.CastPosition);
                 }
+
+             /*   if (check(laneclear, "LR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
+                {
+                  //  int count = minions.Where(x => !x.IsDead && x.IsValidTarget(1800) && x.Health > 20).Count();
+
+                    if (rpred.HitNumber >= slider(laneclear, "LRMIN")) DemSpells.R.Cast(rpred.CastPosition);
+                }*/
             }
         }
 
@@ -334,7 +348,7 @@ namespace T7_KogMaw
 
             if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
             {
-                switch(comb(jungleclear, "JQMODE"))
+                switch (comb(jungleclear, "JQMODE"))
                 {
                     case 0:
                         foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30))
@@ -382,13 +396,13 @@ namespace T7_KogMaw
                 }
             }
 
-           if (check(jungleclear, "JR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
-           {
+            if (check(jungleclear, "JR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
+            {
                 if (myhero.HasBuff("kogmawlivingartillerycost") &&
                     myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
 
                 foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
-                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range && RDamage(x) > x.Health)))
+                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range) && RDamage(x) > x.Health))
                 {
                     var pred = DemSpells.R.GetPrediction(monster);
                     if (pred.HitChancePercent >= 80) DemSpells.R.Cast(monster);
@@ -400,8 +414,8 @@ namespace T7_KogMaw
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
 
-            DragonLocation = new Vector3(9866,4414,-71);
-            BaronLocation = new Vector3(4930,10371,-71);
+         //   DragonLocation = new Vector3(9866, 4414, -71);
+         //   BaronLocation = new Vector3(4930, 10371, -71);
 
             if (check(misc, "skinhax")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
 
@@ -416,10 +430,10 @@ namespace T7_KogMaw
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-                if (check(misc, "ksR") && DemSpells.R.IsLearned && DemSpells.R.IsReady() && target.IsValidTarget(DemSpells.R.Range) &&
+                if (check(misc, "ksR") && DemSpells.R.IsLearned && DemSpells.R.IsReady() && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) &&
                     RDamage(target) > target.Health)
                 {
-                    if (rpred.HitChancePercent >= slider(pred, "RPred") || 
+                    if (rpred.HitChancePercent >= slider(pred, "RPred") ||
                         rpred.HitChance == HitChance.Immobile ||
                         target.HasBuffOfType(BuffType.Stun))
                     {
@@ -427,12 +441,13 @@ namespace T7_KogMaw
                     }
                 }
 
-                if (check(misc, "ksD") && DemSpells.R.IsReady() && DragonLocation.Distance(myhero.Position) < 1800)
+            /*    if (check(misc, "ksD") && DemSpells.R.IsLearned/* && DragonLocation.Distance(myhero.Position) < 1800)
                 {
-                    foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => x.Name.ToLower().Contains("dragon")))
+                    foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1800)
+                                                                            .Where(x => x.Name.ToLower().Contains("dragon")))
                     {
                         if (monster.IsValidTarget() && DemSpells.R.IsInRange(monster.Position) &&
-                            RDamage(monster) > Prediction.Health.GetPrediction(monster,DemSpells.R.CastDelay) )
+                            RDamage(monster) > monster.Health)
                         {
                             DemSpells.R.Cast(monster.Position);
                         }
@@ -441,19 +456,20 @@ namespace T7_KogMaw
 
                 if (check(misc, "ksB") && DemSpells.R.IsReady() && BaronLocation.Distance(myhero.Position) < 1800)
                 {
-                    foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => x.Name.ToLower().Contains("baron") ||
-                                                                                                            x.Name.ToLower().Contains("herald")))
+                    foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1800)
+                                                                            .Where(x => x.Name.ToLower().Contains("baron") ||
+                                                                                        x.Name.ToLower().Contains("herald")))
                     {
                         if (monster.IsValidTarget() && DemSpells.R.IsInRange(monster.Position) &&
-                            RDamage(monster) > Prediction.Health.GetPrediction(monster, DemSpells.R.CastDelay))
+                            RDamage(monster) > monster.Health)
                         {
                             DemSpells.R.Cast(monster.Position);
                         }
                     }
-                }
+                }*/
 
-                if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") && 
-                    myhero.HealthPercent <= slider(misc,"POTMIN"))
+                if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
+                    myhero.HealthPercent <= slider(misc, "POTMIN"))
                 {
                     potion.Cast();
                 }
@@ -475,9 +491,9 @@ namespace T7_KogMaw
             {
 
                 if (check(draw, "drawonlyrdy"))
-                { Circle.Draw(DemSpells.Q.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, 750, myhero.Position); }
+                { Circle.Draw(DemSpells.Q.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, DemSpells.Q.Range, myhero.Position); }
 
-                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, 750, myhero.Position); }
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, DemSpells.Q.Range, myhero.Position); }
 
             }
 
@@ -485,9 +501,9 @@ namespace T7_KogMaw
             {
 
                 if (check(draw, "drawonlyrdy"))
-                { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, new[] {0, 590, 620, 650, 680, 710 }[DemSpells.W.Level], myhero.Position); }
+                { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, new[] { 0, 590, 620, 650, 680, 710 }[DemSpells.W.Level], myhero.Position); }
 
-                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, new[] {0, 590, 620, 650, 680, 710 }[DemSpells.W.Level], myhero.Position); }
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, new[] { 0, 590, 620, 650, 680, 710 }[DemSpells.W.Level], myhero.Position); }
 
             }
 
@@ -505,9 +521,9 @@ namespace T7_KogMaw
             {
 
                 if (check(draw, "drawonlyrdy"))
-                { Circle.Draw(DemSpells.R.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, DemSpells.R.Range, myhero.Position); }
+                { Circle.Draw(DemSpells.R.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level], myhero.Position); }
 
-                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, DemSpells.R.Range, myhero.Position); }
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level], myhero.Position); }
 
             }
 
@@ -531,9 +547,11 @@ namespace T7_KogMaw
 
         public static void OnGapcloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
         {
-            if (sender != null && !sender.IsMe && check(misc,"EGAP") && DemSpells.E.IsReady())
+            if (sender != null && !sender.IsMe && sender.IsEnemy && check(misc, "EGAP") && DemSpells.E.IsReady() &&
+                sender.IsValidTarget(DemSpells.E.Range - 30))
             {
-                DemSpells.E.Cast(sender.Position);
+                var epred = DemSpells.E.GetPrediction(sender);
+                DemSpells.E.Cast(epred.CastPosition);
             }
         }
 
@@ -549,7 +567,7 @@ namespace T7_KogMaw
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 KogMaw And Thank You For Using!");
-            menu.AddLabel("Version 1.0 30/6/2016");
+            menu.AddLabel("Version 1.0 2/7/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -560,8 +578,8 @@ namespace T7_KogMaw
             combo.Add("CE", new CheckBox("Use E", true));
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Use R", true));
-            combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R",1,"100%","50%","25%"));
-           // combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(ms)", 1000, 0, 10000));
+            combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R", 1, "100%", "50%", "25%"));
+          //  combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(ms)", 200, 0, 4000));
             combo.Add("CRMAX", new Slider("Max R Stacks", 5, 1, 10));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
@@ -587,11 +605,14 @@ namespace T7_KogMaw
             laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.Add("LEMIN", new Slider("Min Minions To Hit With E", 2, 1, 10));
             laneclear.AddSeparator();
+         //   laneclear.Add("LR", new CheckBox("Use R", false));
+         //   laneclear.Add("LRMIN", new Slider("Min Minions To Hit With R", 10, 4, 30));
+         //   laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
             jungleclear.AddGroupLabel("Spells");
             jungleclear.Add("JQ", new CheckBox("Use Q", false));
-            jungleclear.Add("JQMODE", new ComboBox("Q Mode",1,"All Monsters","Big Monsters"));
+            jungleclear.Add("JQMODE", new ComboBox("Q Mode", 1, "All Monsters", "Big Monsters"));
             jungleclear.AddSeparator();
             jungleclear.Add("JW", new CheckBox("Use W", true));
             jungleclear.Add("JWMIN", new Slider("Min Monsters To Cast W", 1, 1, 4));
@@ -618,12 +639,12 @@ namespace T7_KogMaw
             misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
             misc.Add("ksR", new CheckBox("Killsteal with R", true));
             misc.AddSeparator();
-            misc.Add("ksD", new CheckBox("Steal Dragon With R", true));
-            misc.Add("ksB", new CheckBox("Steal Baron/RiftHerald With R", true));
-            misc.AddSeparator();
+         //   misc.Add("ksD", new CheckBox("Steal Dragon With R", true));
+        //    misc.Add("ksB", new CheckBox("Steal Baron/RiftHerald With R", true));
+        //    misc.AddSeparator();
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));
             misc.Add("AUTOPASSIVE", new CheckBox("Auto Control Passive", true));
-            misc.Add("EGAP", new CheckBox("Use E On Gapcloser", false));
+            misc.Add("EGAP", new CheckBox("Auto E On Gapcloser", false));
             misc.AddSeparator();
             misc.Add("AUTOPOT", new CheckBox("Auto Potion", true));
             misc.Add("POTMIN", new Slider("Min Health % To Activate Pot", 25, 1, 100));
@@ -643,7 +664,7 @@ namespace T7_KogMaw
             pred.Add("EPred", new Slider("Select % Hitchance", 90, 1, 100));
             pred.AddSeparator();
             pred.AddLabel("R :");
-            pred.Add("RPred", new Slider("Select % Hitchance", 90, 1, 100));
+            pred.Add("RPred", new Slider("Select % Hitchance", 100, 1, 100));
         }
     }
     public static class DemSpells
@@ -655,10 +676,10 @@ namespace T7_KogMaw
 
         static DemSpells()
         {
-            Q = new Spell.Skillshot(SpellSlot.Q, 1000, SkillShotType.Linear, 250, 1650, 70);
+            Q = new Spell.Skillshot(SpellSlot.Q, 1175, SkillShotType.Linear, 250, 1650, 70);
             W = new Spell.Active(SpellSlot.W);
-            E = new Spell.Skillshot(SpellSlot.E, 1200, SkillShotType.Linear, 500, 1400, 120);
-            R = new Spell.Skillshot(SpellSlot.R, 1800, SkillShotType.Circular, 1200, int.MaxValue, 120);
+            E = new Spell.Skillshot(SpellSlot.E, 1280, SkillShotType.Linear, 500, 1200, 120);
+            R = new Spell.Skillshot(SpellSlot.R, new uint[] {0, 1200, 1500, 1800}[Player.Instance.Spellbook.GetSpell(SpellSlot.R).Level] , SkillShotType.Circular, 1200, int.MaxValue, 240);
         }
     }
 }
