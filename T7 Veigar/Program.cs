@@ -16,13 +16,14 @@ namespace Veigarino
     {
         private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
-        private static Menu menu,combo,harass,laneclear,misc,draw,pred,sequence1,sequence2,sequence3;
-        public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
+        private static Menu menu,combo,harass,laneclear,misc,draw,pred,sequence1;
+        public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
+        public static Item potion { get; private set; }
         public static void OnLoad(EventArgs arg)
         {
          //   DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.5)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.6)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -30,6 +31,7 @@ namespace Veigarino
             DatMenu();
             Game.OnTick += OnTick;
             Player.LevelSpell(SpellSlot.Q);
+            potion = new Item((int)ItemId.Health_Potion);
         } 
         private static void OnLvlUp(Obj_AI_Base guy ,Obj_AI_BaseLevelUpEventArgs args)
         {
@@ -79,7 +81,7 @@ namespace Veigarino
 
                 return cdmg;
             }
-            return 0;
+            return 0;          
         }
         private static int comb(Menu submenu, string sig)
         {
@@ -139,11 +141,30 @@ namespace Veigarino
                 if (check(combo, "useW") && DemSpells.W.IsReady() && target.IsValidTarget(DemSpells.W.Range) && !target.IsZombie
                     && !target.IsInvulnerable)
                 {
-                    if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
-                        (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
+                    switch(comb(harass, "HWMODE"))
                     {
-                        DemSpells.W.Cast(Wpred.CastPosition);
+                        case 0:
+                            if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
+                               (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
+                            {
+                                DemSpells.W.Cast(Wpred.CastPosition);
+                            }
+                            break;
+                        case 1:
+                            DemSpells.W.Cast(target.Position);
+                            break;
+                        case 2:
+                            if (target.HasBuffOfType(BuffType.Stun))
+                            {
+                                DemSpells.W.Cast(target.Position);
+                            }
+                            else if (Wpred.HitChance == HitChance.Immobile)
+                            {
+                                DemSpells.W.Cast(Wpred.CastPosition);
+                            }
+                            break;
                     }
+
                 }
             }                 
         } 
@@ -176,21 +197,21 @@ namespace Veigarino
                             if (Epred.HitChancePercent >= slider(pred, "Ehit")) DemSpells.E.Cast(Epred.CastPosition);
                             break;
                         case 1:                          
-                            if (Wpred.HitChancePercent >= slider(pred, "Whit"))
+                            if (Epred.HitChancePercent >= slider(pred, "Ehit"))
                             {
                                 switch(target.IsFleeing)
                                 {
                                     case true:
-                                        DemSpells.E.Cast(Wpred.CastPosition.Shorten(myhero.Position, DemSpells.E.Radius / 2));
+                                        DemSpells.E.Cast(Epred.CastPosition.Shorten(myhero.Position, DemSpells.E.Radius / 2));
                                         break;
                                     case false:
-                                        DemSpells.E.Cast(Wpred.CastPosition.Extend(myhero.Position, DemSpells.E.Radius / 2).To3D());
+                                        DemSpells.E.Cast(Epred.CastPosition.Extend(myhero.Position, DemSpells.E.Radius / 2).To3D());
                                         break;
                                 }
                             }
                             break;
                         case 2:
-                            if (myhero.CountEnemiesInRange(DemSpells.E.Range + 170) >= slider(combo, "CEAOE"))
+                            if (myhero.CountEnemiesInRange(DemSpells.E.Range + (DemSpells.E.Radius / 2) ) >= slider(combo, "CEAOE"))
                             {
                                 foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid && !x.IsAlly &&
                                                                                          x.Distance(myhero.Position) <= DemSpells.E.Range))
@@ -209,10 +230,28 @@ namespace Veigarino
                 if (check(combo, "useW") && DemSpells.W.IsReady() && target.IsValidTarget(DemSpells.W.Range) && !target.IsZombie
                     && !target.IsInvulnerable)
                 {
-                    if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
-                        (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
+                    switch (comb(combo, "CWMODE"))
                     {
-                        DemSpells.W.Cast(Wpred.CastPosition);
+                        case 0:
+                            if (Wpred.HitChancePercent >= slider(pred, "Whit") || Wpred.HitChance == HitChance.Immobile ||
+                               (target.HasBuffOfType(BuffType.Slow) && Wpred.HitChance == HitChance.High))
+                            {
+                                DemSpells.W.Cast(Wpred.CastPosition);
+                            }
+                            break;
+                        case 1:
+                            DemSpells.W.Cast(target.Position);
+                            break;
+                        case 2:
+                            if (target.HasBuffOfType(BuffType.Stun))
+                            {
+                                DemSpells.W.Cast(target.Position);
+                            }
+                            else if (Wpred.HitChance == HitChance.Immobile)
+                            {
+                                DemSpells.W.Cast(Wpred.CastPosition);
+                            }
+                            break;
                     }                         
                 }
 
@@ -296,6 +335,12 @@ namespace Veigarino
             if (check(misc, "sh"))
             {
                 myhero.SetSkinId(comb(misc, "sID"));
+            }
+
+            if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
+                myhero.HealthPercent <= slider(misc, "POTMIN"))
+            {
+                potion.Cast();
             }
 
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
@@ -458,17 +503,20 @@ namespace Veigarino
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Veigar And Thank You For Using!");
-            menu.AddLabel("Version 1.5 26/6/2016");
+            menu.AddLabel("Version 1.6 3/7/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
 
             combo.AddGroupLabel("Spells");
-            combo.Add("useQ", new CheckBox("Use Q in Combo",true)); 
+            combo.Add("useQ", new CheckBox("Use Q in Combo",true));
             combo.Add("useW", new CheckBox("Use W in Combo",true));
             combo.Add("useE", new CheckBox("Use E in Combo",true));
             combo.Add("useR", new CheckBox("Use R in Combo",true));
             combo.Add("igntC", new CheckBox("Use Ignite", true));
+            combo.AddSeparator();
+            combo.AddLabel("W Mode:");
+            combo.Add("CWMODE", new ComboBox("Select Mode", 0, "With Prediciton", "Without Prediction", "Only On Stunned Enemies"));
             combo.AddSeparator();
             combo.AddLabel("E Options:");
             combo.Add("CEMODE", new ComboBox("E Mode: ", 0, "Target On The Center", "Target On The Edge(stun)","AOE"));
@@ -478,8 +526,9 @@ namespace Veigarino
             harass.AddGroupLabel("Spells");
             harass.Add("hQ", new CheckBox("Use Q",true));
             harass.Add("hW", new CheckBox("Use W",false));
+            harass.AddSeparator();
             harass.AddLabel("W Mode:");
-            harass.Add("hWm", new ComboBox("Select Mode",2,"With Prediciton","Without Prediction(Not Recommended)","Only On Stunned Enemies"));
+            harass.Add("HWMODE", new ComboBox("Select Mode",2,"With Prediciton","Without Prediction(Not Recommended)","Only On Stunned Enemies"));
             harass.AddSeparator();
             harass.AddLabel("Min Mana To Harass");
             harass.Add("minMH", new Slider("Stop Harass At % Mana", 40, 0, 100));
@@ -523,6 +572,9 @@ namespace Veigarino
             misc.Add("ksR", new CheckBox("Killsteal with R",false));
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", false));
             misc.AddSeparator();
+            misc.Add("AUTOPOT", new CheckBox("Auto Potion", true));
+            misc.Add("POTMIN", new Slider("Min Health % To Activate Potion", 50, 1, 100));
+            misc.AddSeparator();
             misc.AddGroupLabel("Gapcloser");
             misc.Add("gapmode", new ComboBox("Use E On Gapcloser                                               Mode:", 2, "Off","Self","Enemy(Pred)"));
             misc.AddSeparator();
@@ -556,8 +608,8 @@ namespace Veigarino
         static DemSpells()
         {
             Q = new Spell.Skillshot(SpellSlot.Q, 950, SkillShotType.Linear, 250, 2000, 70);
-            W = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Circular, 1350, 0, 225);
-            E = new Spell.Skillshot(SpellSlot.E, 700, SkillShotType.Circular, 500, 0, 425);
+            W = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Circular, 1350, 0, 112);
+            E = new Spell.Skillshot(SpellSlot.E, 700, SkillShotType.Circular, 500, 0, 375);
             R = new Spell.Targeted(SpellSlot.R, 650);
         }
     }
