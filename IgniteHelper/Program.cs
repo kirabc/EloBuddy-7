@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Events;
@@ -10,8 +10,8 @@ using SharpDX;
 namespace Ignite_Helper
 {
     class Program
-    {   
-        private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; } 
+    {
+        private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         private static Menu menu;
@@ -24,26 +24,43 @@ namespace Ignite_Helper
             Game.OnUpdate += OnUpdate;
             Drawing.OnDraw += OnDraw;
         }
-        private static void OnUpdate(EventArgs args)
+
+        private static bool check(Menu submenu, string sig)
         {
-            var target = TargetSelector.GetTarget(1000, DamageType.Physical, Player.Instance.Position);
-            float HP5 = target.FlatHPRegenMod * 5, IgniteDMG = 50 + (20 * myhero.Level);
-            if (ignt.Slot != SpellSlot.Unknown && ignt.IsReady() && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health && ignt.IsInRange(target) && menu["active"].Cast<CheckBox>().CurrentValue)
+            return submenu[sig].Cast<CheckBox>().CurrentValue;
+        }
+        private static void OnUpdate(EventArgs args) { Ignite(); }
+
+        private static void Ignite()
+        {
+            var target = TargetSelector.GetTarget(700, DamageType.True, Player.Instance.Position);
+
+            float IgniteDMG = 50 + (20 * myhero.Level);
+
+            if (target != null)
             {
-                if (IgniteDMG > (target.Health + HP5)) ignt.Cast(target);
+                float HP5 = target.HPRegenRate * 5;
+
+                if (check(menu, "active") && ignt.IsReady() && target.IsValidTarget(ignt.Range) &&
+                    (IgniteDMG > (target.TotalShieldHealth() + HP5)))
+                {
+                    ignt.Cast(target);
+                }
             }
-        } 
+        }
         private static void OnDraw(EventArgs args)
         {
-            if (menu["draw"].Cast<CheckBox>().CurrentValue && ignt.IsReady())
+            if (check(menu, "draw") && ignt.IsReady())
+            {
                 Circle.Draw(SharpDX.Color.Red, ignt.Range, myhero.Position);
+            }                
         }
         private static void Menu()
         {
             menu = MainMenu.AddMenu("Ignite Helper", "ignitemenu");
             menu.AddGroupLabel("Welcome to Ignite Helper and thank you for using! :)");
             menu.AddGroupLabel("Author: Toyota7");
-            menu.AddGroupLabel("Version: 1.0");
+            menu.AddGroupLabel("Version: 1.1");
             menu.AddSeparator();
             menu.Add("active", new CheckBox("Use Ignite", true));
             menu.Add("draw", new CheckBox("Draw ignite Range", false));       
