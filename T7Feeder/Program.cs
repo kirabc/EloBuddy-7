@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
@@ -36,15 +37,12 @@ namespace T7_Feeder
         private static readonly Vector3 TopPoint = new Vector3(3142, 13402, 52.8381f);
         private static readonly Vector3 BotPoint = new Vector3(13498, 3284, 51);
         private static readonly Vector3 MidPoint = new Vector3(4131, 4155, 115);
-      //  private static Vector3 Function1 = new Vector3(myhero.Position.X + 1, myhero.Position.Y + 1, myhero.Position.Z);
-
 
         private static string[] Messages = { "wat", "how?" , "mate..", "-_-", "why?", "laaaaag", "oh my god this lag is unreal",
                                              "rito pls 500 ping", "sorry lag", "help pls", "nooob wtf", "team???", "i can't carry dis", 
                                              "wtf how?", "wow rito nerf pls", "omg so op", "what's up with this lag?", "is the server lagging again?",
                                              "i call black magic", "pls fix rito", "this champ is bad", "i was afk", "so lucky", "much wow" };
         private static string[] Chats = { "/all", " " };
-
 
         private static List<Ability> ChampList = new List<Ability>()
         {
@@ -207,18 +205,20 @@ namespace T7_Feeder
 
         public static void OnLoad(EventArgs args)
         {
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#09FF00'> Feeder</font> : Loaded!(v1.0)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#09FF00'> Feeder</font> : Loaded!(v1.1)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
-            Game.OnUpdate += OnUpdate;
+            Game.OnTick += OnTick;
             DatMenu();
+            Thread.Sleep(15500);           
         }
 
-        private static void OnUpdate(EventArgs args)
+        private static void OnTick(EventArgs args)
         {
             Checks();
             Abilities();
             SummonerSpells();
             ChatOnDeath();
+            Shopping();
             Feed();
         }
 
@@ -227,12 +227,17 @@ namespace T7_Feeder
             return menu[sig].Cast<CheckBox>().CurrentValue;
         }
 
+        private static int slider(Menu menu, string sig)
+        {
+            return menu[sig].Cast<Slider>().CurrentValue;
+        }
+
         private static int combocheck(Menu menu, string sig)
         {
             return menu[sig].Cast<ComboBox>().CurrentValue;
         }
         
-        private static void SummonerSpells()//credits to Capitao Addon
+        private static void SummonerSpells()
         {
             var ghost = myhero.Spellbook.Spells.Where(x => x.Name.Contains("Haste"));
             SpellDataInst ghosty = ghost.Any() ? ghost.First() : null;
@@ -263,6 +268,31 @@ namespace T7_Feeder
             }
         }
 
+        private static void Shopping()
+        { //101% thrash code
+            if (!check(menu, "AUTOBUY")) return;
+
+            if (myhero.IsInShopRange())
+            {
+                if (!Item.HasItem(ItemId.Boots_of_Speed) && !Item.HasItem(ItemId.Boots_of_Mobility))
+                {
+                    if (myhero.Gold >= 300 && Shop.CanShop) Shop.BuyItem(ItemId.Boots_of_Speed);
+                }
+                if (Item.HasItem(ItemId.Boots_of_Speed) && !Item.HasItem(ItemId.Boots_of_Mobility))
+                {
+                    if (myhero.Gold >= 600 && Shop.CanShop) Shop.BuyItem(ItemId.Boots_of_Mobility);
+                }
+                if (Item.HasItem(ItemId.Boots_of_Mobility) && !Item.HasItem(ItemId.Aether_Wisp))
+                {
+                    if (myhero.Gold >= 850 && Shop.CanShop) Shop.BuyItem(ItemId.Aether_Wisp);
+                }
+            }
+            if (Item.HasItem(ItemId.Aether_Wisp))
+            {
+                return;
+            }
+        }
+
         private static void Checks()
         {
             if (myhero.IsDead)
@@ -280,32 +310,35 @@ namespace T7_Feeder
         {
             if (myhero.IsDead && Chatted == false)
             {
-                switch(combocheck( menu, "MSGS"))
-                { 
-                    case 0:
-                        break;
-                    case 1:
-                        var Random1 = new Random();
-                        Chat.Say("/all " + Messages[Random1.Next(0, 23)]);
-                        Chatted = true;
-                        break;
-                    case 2:
-                        var Random2 = new Random();
-                        Chat.Say(Messages[Random2.Next(0, 23)]);
-                        Chatted = true;
-                        break;
-                    case 3:
-                        var Random3a = new Random();
-                        var Random3b = new Random();
-                        Chat.Say(Chats[Random3b.Next(0,1)] + " " + Messages[Random3a.Next(0, 23)]);
-                        Chatted = true;
-                        break;                   
-                }
+                
+                    switch (combocheck(menu, "MSGS"))
+                    {
+                        case 0:
+                            break;
+                        case 1:
+                            var Random1 = new Random();
+                            Core.DelayAction(delegate { Chat.Say("/all " + Messages[Random1.Next(0, 23)]); }, slider(menu, "CHATDELAY") * 1000);
+                            Chatted = true;
+                            break;
+                        case 2:
+                            var Random2 = new Random();
+                            Core.DelayAction(delegate { Chat.Say(Messages[Random2.Next(0, 23)]); }, slider(menu, "CHATDELAY") * 1000);
+                            Chatted = true;
+                            break;
+                        case 3:
+                            var Random3a = new Random();
+                            var Random3b = new Random();
+                            Core.DelayAction(delegate { Chat.Say(Chats[Random3b.Next(0, 1)] + " " + Messages[Random3a.Next(0, 23)]); }, slider(menu, "CHATDELAY") * 1000);
+                            Chatted = true;
+                            break;
+                    }
             }
         }
 
         private static void Abilities()
         {
+            if (!check(menu, "ABILITIES")) return;
+
             var champ = ChampList.FirstOrDefault(h => h.Name == myhero.ChampionName);
 
             if (champ == null) return;
@@ -399,14 +432,16 @@ namespace T7_Feeder
             menu = MainMenu.AddMenu("T7 Feeder", "feederkappa");
 
             menu.AddGroupLabel("Welcome to T7 Feeder And Thank You For Using! Kappa");
-            menu.AddGroupLabel("Version 1.0");
+            menu.AddGroupLabel("Version 1.1 4/7/16");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.Add("ACTIVE", new CheckBox("Active", true));
             menu.Add("MODE", new ComboBox("Feed Mode =>", 2, "Closest Enemy", "Top", "Mid", "Bot"));
             menu.Add("MSGS", new ComboBox("Chat On Death",0,"Off","/all Chat","Team Chat","Random Chat"));
+            menu.Add("CHATDELAY", new Slider("Chat Delay After Death(seconds)", 4, 1, 7));
             menu.Add("SPELLS", new CheckBox("Use Summoner Spells", false));
             menu.Add("ABILITIES", new CheckBox("Use Abilities", true));
+            menu.Add("AUTOBUY", new CheckBox("Auto Buy Items", true));
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
 
