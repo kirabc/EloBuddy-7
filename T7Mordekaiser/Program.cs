@@ -20,19 +20,20 @@ namespace T7MordeOP
         private static Menu menu, combo, harass, laneclear,jungleclear, misc, draw, pred, sequence1, sequence2, sequence3;
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         private static float RAttackDelay = 1200;
+        public static Item potion { get; private set; }
         public static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "Mordekaiser") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#1F1F1F'> Mordekaiser</font> : Loaded!(v1.1)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#1F1F1F'> Mordekaiser</font> : Loaded!(v1.2)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             Game.OnUpdate += OnUpdate;
-           // Gapcloser.OnGapcloser += OnGapcloser
+            Gapcloser.OnGapcloser += OnGapcloser
             DatMenu();
             Game.OnTick += OnTick;
             Player.LevelSpell(SpellSlot.E);
-
+            potion = new Item((int)ItemId.Health_Potion);
         }
 
 
@@ -41,12 +42,9 @@ namespace T7MordeOP
             if (myhero.IsDead) return;
 
             var flags = Orbwalker.ActiveModesFlags;
-        //    Chat.Print(Ghost.Name);
-            if (flags.HasFlag(Orbwalker.ActiveModes.Combo) && (myhero.Health - TotalHealthLoss()) > 100)
-            {
-                Combo();
-            }
 
+            if (flags.HasFlag(Orbwalker.ActiveModes.Combo) && (myhero.Health - TotalHealthLoss()) > 100) Combo();
+            
             if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.HealthPercent > harass["hminhealth"].Cast<Slider>().CurrentValue) Harass();
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.HealthPercent > laneclear["lminhealth"].Cast<Slider>().CurrentValue) Laneclear();
@@ -54,12 +52,21 @@ namespace T7MordeOP
             if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.HealthPercent > jungleclear["jminhealth"].Cast<Slider>().CurrentValue) Jungleclear();
            
             Misc();
-
         }
 
         private static bool check(Menu submenu, string sig)
         {
             return submenu[sig].Cast<CheckBox>().CurrentValue;
+        }
+
+        private static int slider(Menu submenu, string sig)
+        {
+            return submenu[sig].Cast<Slider>().CurrentValue;
+        }
+
+        private static int comb(Menu submenu, string sig)
+        {
+            return submenu[sig].Cast<ComboBox>().CurrentValue;
         }
 
         private static void OnLvlUp(Obj_AI_Base sender, Obj_AI_BaseLevelUpEventArgs args)
@@ -83,7 +90,7 @@ namespace T7MordeOP
                 float totaldamage = 0;
 
                 if (DemSpells.Q.IsLearned && DemSpells.Q.IsReady() ) { totaldamage += TotalQDamage(target); }
-                if (DemSpells.W.IsLearned && DemSpells.W.IsReady()) { totaldamage += TotalWDamage(target); }
+                if (DemSpells.W.IsLearned && DemSpells.W.IsReady() ) { totaldamage += TotalWDamage(target); }
                 if (DemSpells.E.IsLearned && DemSpells.E.IsReady() ) { totaldamage += EDamage(target); }
                 if (DemSpells.R.IsLearned && DemSpells.R.IsReady() ) { totaldamage += TotalRDamage(target); }
 
@@ -115,7 +122,7 @@ namespace T7MordeOP
             var qdamage = (new[] { 0, 10, 20, 30, 40, 50 }[DemSpells.Q.Level] +
                           (new[] { 0, 0.5, 0.6, 0.7, 0.8, 0.9 }[DemSpells.Q.Level] * myhero.TotalAttackDamage) +
                           (0.6 * myhero.FlatMagicDamageMod)) +
-                          (new[] { 0, 20, 40, 60, 80, 100 }[DemSpells.Q.Level] +                                //T7's Maths OP Kappa pepo :P
+                          (new[] { 0, 20, 40, 60, 80, 100 }[DemSpells.Q.Level] +                                
                           (new[] { 0, 1, 1.2, 1.4, 1.6, 1.8 }[DemSpells.Q.Level] * myhero.TotalAttackDamage) +
                           (1.2 * myhero.FlatMagicDamageMod));
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)qdamage);
@@ -179,9 +186,24 @@ namespace T7MordeOP
                         return;
                     }
                        
-                    target = TargetSelector.GetTarget(4500, DamageType.Physical, Player.Instance.Position);
-                    DemSpells.R.Cast(target);
-                              
+                    switch (comb(combo, "GHOSTMODE"))
+                    {
+                        case 0:
+                            {
+                                target = TargetSelector.GetTarget(1000, DamageType.Physical, Player.Instance.Position);
+                                DemSpells.R.Cast(target);                                                                    
+                            }
+                            break;
+                        case 1:
+                            {
+                               // if (combo["GHOSTMIN"].Cast<Slider>().CurrentValue >= Ghost.CountEnemiesInRange(4500))
+                              //  {
+                                    target = TargetSelector.GetTarget(4500, DamageType.Physical, Player.Instance.Position);
+                                    DemSpells.R.Cast(target);
+                              //  }
+                            }
+                            break;
+                    }
                     RAttackDelay = Environment.TickCount + Ghost.AttackDelay * 1000;                 
                 }
             }
@@ -191,54 +213,57 @@ namespace T7MordeOP
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
 
-            if (check(combo, "CQ") && DemSpells.Q.IsReady() && DemSpells.Q.IsLearned && target.Distance(myhero.Position) < myhero.AttackRange) { DemSpells.Q.Cast(); }
-
-            CastW();
-
-            if (check(combo, "CE") && DemSpells.E.IsReady() && DemSpells.E.IsLearned && DemSpells.E.IsInRange(target.Position))
+            if (target != null)
             {
-                switch (combo["EMode"].Cast<ComboBox>().CurrentValue)
+                if (check(combo, "CQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(myhero.AttackRange)) DemSpells.Q.Cast();
+
+                CastW();
+
+                if (check(combo, "CE") && DemSpells.E.IsReady() && DemSpells.E.IsLearned && target.IsValidTarget(DemSpells.E.Range))
                 {
-                    case 0 :
-                        var Epred = DemSpells.E.GetPrediction(target);
-                        if (Epred.HitChancePercent >= misc["EPred"].Cast<Slider>().CurrentValue) DemSpells.E.Cast(Epred.CastPosition);
-                        break;
-                    case 1:
-                        DemSpells.E.Cast(target.Position);
-                        break;
+                    switch (comb(combo, "EMode"))
+                    {
+                        case 0:
+                            var Epred = DemSpells.E.GetPrediction(target);
+                            if (Epred.HitChancePercent >= slider(misc, "EPred")) DemSpells.E.Cast(Epred.CastPosition);
+                            break;
+                        case 1:
+                            DemSpells.E.Cast(target.Position);
+                            break;
+                    }
+                }
+
+                if (check(combo, "CR") && DemSpells.R.IsLearned && DemSpells.R.IsReady() && target.IsValidTarget(DemSpells.R.Range) &&
+                    TotalRDamage(target) > (target.Health + (target.FlatHPRegenMod * 10)))
+                {
+                    if (DemSpells.E.IsReady() && EDamage(target) > target.Health) return;
+                                      
+                    DemSpells.R.Cast(target); 
+                }
+
+                if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && target.IsValidTarget(ignt.Range) &&
+                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health && (TotalRDamage(target) < target.Health &&
+                    !target.HasBuff("mordekaisercotgpetbuff2")))
+                {
+                    if (target.Distance(myhero.Position) < (DemSpells.E.Range / 2))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        ignt.Cast(target);
+                    }
                 }
             }
-
-            if (check(combo, "CR") && DemSpells.R.IsReady() && DemSpells.R.IsLearned && DemSpells.R.IsInRange(target.Position) &&
-                TotalRDamage(target) > (target.Health + (target.FlatHPRegenMod * 10)))
-            {  
-                if (!DemSpells.E.IsReady() || EDamage(target) < target.Health)
-                {  DemSpells.R.Cast(target);  }
-                 
-            }
-
-            if (check(combo, "Cignt") && ignt.IsReady() && target.Health > ComboDamage(target) && ignt.IsInRange(target.Position) &&
-                myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health &&
-                !target.HasBuff("mordekaisercotgpetbuff2"))
-            {
-                if (target.Distance(myhero.Position) < (DemSpells.E.Range / 2))
-                {
-                    return;
-                }
-                else
-                {
-                    ignt.Cast(target);
-                }
-            }       
         }
 
         private static void Harass()
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
 
-            if (check(harass, "HQ") && DemSpells.Q.IsReady() && DemSpells.Q.IsLearned && target.Distance(myhero) < myhero.AttackRange) DemSpells.Q.Cast();
+            if (check(harass, "HQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(myhero.AttackRange)) DemSpells.Q.Cast();
 
-            if (check(harass, "HE") && DemSpells.E.IsReady() && DemSpells.E.IsLearned && DemSpells.E.IsInRange(target)) DemSpells.E.Cast(target.Position);
+            if (check(harass, "HE") && DemSpells.E.IsLearned && DemSpells.E.IsReady() && target.IsValidTarget(DemSpells.E.Range)) DemSpells.E.Cast(target.Position);
 
         }
 
@@ -260,33 +285,46 @@ namespace T7MordeOP
 
         private static void Misc()
         {
-
-            if (check(misc, "skinhack")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
+            if (check(misc, "skinhack")) myhero.SetSkinId((int)comb(misc, "skinID"));
+            
+            if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
+                myhero.HealthPercent <= slider(misc, "POTMIN"))
+            {
+                potion.Cast();
+            }
             
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
 
             if (target != null)
             {
-                if (check(misc, "ksE") && EDamage(target) > target.Health &&
-                    DemSpells.E.IsInRange(target) && DemSpells.E.IsReady() && DemSpells.E.IsLearned &&
-                    !target.IsInvulnerable) DemSpells.E.Cast(target);
+                if (check(misc, "ksE") && DemSpells.E.IsLearned && DemSpells.E.IsReady() && EDamage(target) > target.Health &&
+                    target.IsValidTarget(DemSpells.E.Range) && !target.IsInvulnerable) DemSpells.E.Cast(target.Position);
 
-                if (check(misc, "autoign") && ignt.IsReady() &&
-                    ignt.IsInRange(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
+                if (check(misc, "autoign") && ignt.IsReady() && target.IsValidTarget(ignt.Range) &&
+                    myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health) ignt.Cast(target);
             }
-
         }
 
         private static void Jungleclear()
         {
             foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1000f))
             {
-                if (monster.IsValidTarget())
+                if (monster.IsValidTarget(DemSpells.E.Range))
                 {
                     if (DemSpells.Q.IsReady() && check(jungleclear, "JQ")) { DemSpells.Q.Cast(); }
                     if (DemSpells.W.IsReady() && check(jungleclear, "JW")) { DemSpells.W.Cast(myhero); }
                     if (DemSpells.E.IsReady() && check(jungleclear, "JE")) { DemSpells.E.Cast(monster); } 
                 }
+            }
+        }
+        
+        public static void OnGapcloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
+        {
+            if (sender != null && !sender.IsMe && sender.IsEnemy && check(misc, "EGAP") && DemSpells.E.IsLearned && DemSpells.E.IsReady() &&
+                sender.IsValidTarget(DemSpells.E.Range - 30) && !sender.HasBuffOfType(BuffType.SpellImmunity) && !sender.IsInvulnerable)
+            {
+                var epred = DemSpells.E.GetPrediction(sender);
+                DemSpells.E.Cast(epred.CastPosition);
             }
         }
 
@@ -333,7 +371,7 @@ namespace T7MordeOP
                 foreach( var buff in Ghost.Buffs.Where(x => x.IsValid() && x.Name.Contains("mordekaisercotgpetbuff2")))
                 {
                     var endTime = Math.Max(0, buff.EndTime - Game.Time);
-                    Drawing.DrawText(Drawing.WorldToScreen(Ghost.Position).X,                   // Credits To Hellsing
+                    Drawing.DrawText(Drawing.WorldToScreen(Ghost.Position).X,                   
                                          Drawing.WorldToScreen(Ghost.Position).Y - 30,
                                          Color.Green, "Time: " + Convert.ToString(endTime, CultureInfo.InvariantCulture));
                 }
@@ -369,7 +407,7 @@ namespace T7MordeOP
             misc = menu.AddSubMenu("Misc", "misc");
 
             menu.AddGroupLabel("Welcome to T7 Mordekaiser And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.1 12/6/2016");
+            menu.AddGroupLabel("Version 1.2 4/7/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -381,33 +419,29 @@ namespace T7MordeOP
             combo.Add("CR", new CheckBox("Use R in Combo", true));
             combo.Add("Cignt", new CheckBox("Use Ignite", true));
             combo.AddSeparator();
-            combo.AddGroupLabel("Ghost Settings");
+            combo.AddGroupLabel("E Mode");
+            combo.Add("EMode", new ComboBox("Select Mode", 1, "With Prediction", "Without Prediciton"));
+            combo.AddSeparator();
+            combo.AddLabel("Ghost Settings");
             combo.Add("CGhost", new CheckBox("Auto Control Ghost", true));
             combo.Add("GHOSTMODE", new ComboBox("Select Ghost Mode     =>",0,"Fight My Target","Go Attack Enemies"));
             combo.Add("GHOSTCOMBO", new CheckBox("Only Control Drag While In Combo Mode", true));
-            combo.Add("GHOSTMIN", new Slider("Dont Harass If More Than X Enemies:",3,1,5));
-            combo.AddSeparator();
-            combo.AddGroupLabel("E Mode:");
-            combo.Add("EMode", new ComboBox("Select Mode", 1, "With Prediction", "Without Prediciton"));
-           
 
             harass.AddGroupLabel("Spells");
             harass.Add("HQ", new CheckBox("Use Q", true));
             harass.Add("HE", new CheckBox("Use E", false));
             harass.AddSeparator();
-            harass.AddGroupLabel("Min Mana To Harass");
+            harass.AddLabel("Min Mana To Harass");
             harass.Add("hminhealth", new Slider("Stop Harass At % Health", 65, 0, 100));
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q", true));
-       //     laneclear.Add("LW", new CheckBox("Use W", false));
             laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Spell Options");
+            laneclear.AddLabel("Spell Options");
             laneclear.Add("lminmin1", new Slider("Min Minions To Cast Q", 2, 0, 6));
-         //   laneclear.Add("lminmin2", new Slider("Min Minions To Cast E", 1, 0, 6));
             laneclear.AddSeparator();
-            laneclear.AddGroupLabel("Stop Laneclear At % Health");
+            laneclear.AddLabel("Stop Laneclear At % Health");
             laneclear.Add("lminhealth", new Slider("%", 65, 0, 100));
 
             jungleclear.AddGroupLabel("Spells");
@@ -427,19 +461,21 @@ namespace T7MordeOP
             draw.Add("DRAWGHOSTAA", new CheckBox("Draw Ghost's AA Range", true));
             draw.Add("DRAWGHOSTTIME", new CheckBox("Draw Ghost's Remaining Time", true));
 
-            misc.AddGroupLabel("Killsteal");
-    //        misc.Add("ksW", new CheckBox("Killsteal with W", false));
+            misc.AddLabel("Killsteal");
             misc.Add("ksE", new CheckBox("Killsteal with E", true));
-            misc.Add("autoing", new CheckBox("Auto Ignite If Killable", false));
+            misc.Add("autoign", new CheckBox("Auto Ignite If Killable", false));
             misc.AddSeparator();
-            misc.AddGroupLabel("Prediction");
-            misc.AddGroupLabel("E :");
+            misc.AddLabel("Prediction");
+            misc.AddLabel("E :");
             misc.Add("EPred", new Slider("Select % Hitchance", 80,0,100));
             misc.AddSeparator();
-            misc.AddGroupLabel("Auto Level Up Spells");
+            misc.Add("AUTOPOT", new CheckBox("Auto Potion", true));
+            misc.Add("POTMIN", new Slider("Min Health % To Activate Pot", 25, 1, 100));
+            misc.AddSeparator();
+            misc.AddLabel("Auto Level Up Spells");
             misc.Add("autolevel", new CheckBox("Activate Auto Level Up Spells", true));
             misc.AddSeparator();
-            misc.AddGroupLabel("Skin Hack");
+            misc.AddLabel("Skin Hack");
             misc.Add("skinhack", new CheckBox("Activate Skin hack"));
             misc.Add("skinID", new ComboBox("Skin Hack", 4, "Default", "Dragon Knight", "Infernal", "Pentakill", "Lord", "King Of Clubs"));
 
@@ -458,7 +494,7 @@ namespace T7MordeOP
         {
             Q = new Spell.Active(SpellSlot.Q);
             W = new Spell.Targeted(SpellSlot.W , 1000);
-            E = new Spell.Skillshot(SpellSlot.E, 670, SkillShotType.Cone, (int)0.25f, 2000, 12 * 2 * (int)Math.PI / 180); //Credits to Kk2 for cone data
+            E = new Spell.Skillshot(SpellSlot.E, 675, SkillShotType.Cone, (int)0.25f, 2000, 12 * 2 * (int)Math.PI / 180); 
             R = new Spell.Targeted(SpellSlot.R, 650);
         }
     }
