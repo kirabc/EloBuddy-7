@@ -9,7 +9,7 @@ using EloBuddy.SDK.Events;
 using EloBuddy.SDK.Menu;
 using EloBuddy.SDK.Menu.Values;
 using EloBuddy.SDK.Rendering;
-//using T7_Fiora.Evade;
+using T7_Fiora.Evade;
 using SharpDX;
 using Color = System.Drawing.Color;
 
@@ -514,7 +514,7 @@ namespace T7_Fiora
                 return;
             }
 
-            if (Evade.SpellDatabase.GetByName(args.SData.Name) != null && !check(blocking, "evade"))
+            if (SpellDatabase.GetByName(args.SData.Name) != null && !check(blocking, "evade"))
                 return;
 
             if (!SpellBlock.Contains(unit, args))
