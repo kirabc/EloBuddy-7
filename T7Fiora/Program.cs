@@ -36,7 +36,7 @@ namespace T7_Fiora
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpellCast;
-            Orbwalker.OnPostAttack += OnPostAttack;
+           // Orbwalker.OnPostAttack += OnPostAttack;
             DatMenu();
             Game.OnTick += OnTick;
             tiamat = new Item((int)ItemId.Tiamat_Melee_Only, 400);
