@@ -250,7 +250,7 @@ namespace T7_KogMaw
 
                   /*  if (slider(combo, "CRDELAY") > 0 && DemSpells.R.IsReady((uint)slider(combo, "CRDELAY"))) DemSpells.R.Cast(rpred.CastPosition);
                     else if (slider(combo, "CRDELAY") == 0 && DemSpells.R.IsReady()) DemSpells.R.Cast(rpred.CastPosition);*/
-                    Core.DelayAction(() => DemSpells.R.Cast(rpred.CastPosition),slider(combo, "CRDELAY"));
+                    Core.DelayAction(() => DemSpells.R.Cast(rpred.CastPosition),(int)slider(combo, "CRDELAY"));
                 }
 
 
