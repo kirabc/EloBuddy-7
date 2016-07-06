@@ -31,7 +31,7 @@ namespace T7_KogMaw
         private static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "KogMaw") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#0B7D0B'> KogMaw</font> : Loaded!(v1.0b)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#0B7D0B'> KogMaw</font> : Loaded!(v1.0)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -216,7 +216,7 @@ namespace T7_KogMaw
 
         private static void Combo()
         {
-            var target = TargetSelector.GetTarget(2000, DamageType.Physical, Player.Instance.Position);
+            var target = TargetSelector.GetTarget(2000, DamageType.Physical, myhero.Position);
 
             if (target != null)
             {
@@ -231,7 +231,7 @@ namespace T7_KogMaw
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-                if (check(combo, "CW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && target.IsValidTarget(new[] { 0, 590, 620, 650, 680, 710 }[DemSpells.W.Level]))
+                if (check(combo, "CW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && target.Distance(myhero.Position) < (new[] { 0, 590, 620, 650, 680, 710 }[DemSpells.W.Level]))
                 {
                     DemSpells.W.Cast();
                 }
@@ -242,24 +242,23 @@ namespace T7_KogMaw
                     DemSpells.E.Cast(epred.CastPosition);
                 }
 
-                if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) &&
-                   rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff() && target.Health > 1)
+                if (check(combo, "CR") && DemSpells.R.IsReady() && target.IsValid() && target.Distance(myhero.Position) < (new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) &&
+                   rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff() && !target.IsInvulnerable)
                 {
-                    if (myhero.HasBuff("kogmawlivingartillerycost") &&
-                         myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
+                    if (myhero.HasBuff("kogmawlivingartillerycost") && myhero.GetBuffCount("kogmawlivingartillerycost") == slider(combo, "CRMAX")) return;
+
                     switch(comb(combo, "CRMIN"))
                     {
                         case 0:
-                            if(target.HealthPercent <= 100) DemSpells.R.Cast(rpred.CastPosition); 
+                            if (target.HealthPercent <= 100.00f) DemSpells.R.Cast(rpred.CastPosition);
                             break;
                         case 1:
-                            if(target.HealthPercent <= 50) DemSpells.R.Cast(rpred.CastPosition);
-                            break;
+                            if (target.HealthPercent <= 49.99f) DemSpells.R.Cast(rpred.CastPosition);
+                            break;                          
                         case 2:
-                            if(target.HealthPercent <= 25) DemSpells.R.Cast(rpred.CastPosition);
+                            if (target.HealthPercent <= 24.99f) DemSpells.R.Cast(rpred.CastPosition);
                             break;
                     }
-                    
                 }
 
 
@@ -576,7 +575,7 @@ namespace T7_KogMaw
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 KogMaw And Thank You For Using!");
-            menu.AddLabel("Version 1.0 2/7/2016");
+            menu.AddLabel("Version 1.0 30/6/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -588,6 +587,7 @@ namespace T7_KogMaw
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Use R", true));
             combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R", 1, "100%", "50%", "25%"));
+          //  combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(ms)", 200, 0, 4000));
             combo.Add("CRMAX", new Slider("Max R Stacks", 5, 1, 10));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
@@ -652,7 +652,7 @@ namespace T7_KogMaw
         //    misc.AddSeparator();
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));
             misc.Add("AUTOPASSIVE", new CheckBox("Auto Control Passive", true));
-            misc.Add("EGAP", new CheckBox("Auto E On Gapcloser", false));
+            misc.Add("EGAP", new CheckBox("Use E On Gapcloser", false));
             misc.AddSeparator();
             misc.Add("AUTOPOT", new CheckBox("Auto Potion", true));
             misc.Add("POTMIN", new Slider("Min Health % To Activate Pot", 25, 1, 100));
@@ -672,7 +672,7 @@ namespace T7_KogMaw
             pred.Add("EPred", new Slider("Select % Hitchance", 90, 1, 100));
             pred.AddSeparator();
             pred.AddLabel("R :");
-            pred.Add("RPred", new Slider("Select % Hitchance", 100, 1, 100));
+            pred.Add("RPred", new Slider("Select % Hitchance", 90, 1, 100));
         }
     }
     public static class DemSpells
