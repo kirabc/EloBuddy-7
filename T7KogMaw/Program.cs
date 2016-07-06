@@ -247,7 +247,7 @@ namespace T7_KogMaw
                 {
                     if (myhero.HasBuff("kogmawlivingartillerycost") &&
                          myhero.GetBuffCount("kogmawlivingartillerycost") == slider(combo, "CRMAX")) return;
-                    switch(comb(combo, "CRMIN")
+                    switch(comb(combo, "CRMIN"))
                     {
                         case 0:
                             if(target.HealthPercent <= 100) DemSpells.R.Cast(rpred.CastPosition); 
