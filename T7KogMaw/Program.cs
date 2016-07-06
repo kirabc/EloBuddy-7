@@ -579,7 +579,7 @@ namespace T7_KogMaw
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Use R", true));
             combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R", 1, "100%", "50%", "25%"));
-            combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(seconds)", 1.0f, 0.0f, 4.0f));
+            combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(seconds)", 1, 0, 4));
             combo.Add("CRMAX", new Slider("Max R Stacks", 5, 1, 10));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
