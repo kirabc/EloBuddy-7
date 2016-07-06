@@ -224,7 +224,7 @@ namespace T7_KogMaw
                 var qpred = DemSpells.Q.GetPrediction(target);
                 var epred = DemSpells.E.GetPrediction(target);
                 var rpred = DemSpells.R.GetPrediction(target);
-                Chat.Print(ComboDamage(target));
+                
                 if (check(combo, "CQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range - 10) &&
                     qpred.HitChancePercent >= slider(pred, "Qpred") && !qpred.Collision)
                 {
@@ -242,15 +242,15 @@ namespace T7_KogMaw
                     DemSpells.E.Cast(epred.CastPosition);
                 }
 
-                if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) /*&& ComboDamage(target) > target.Health */&&
+                if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) &&
                    rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff())
                 {
                     if (myhero.HasBuff("kogmawlivingartillerycost") &&
-                         myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
+                         myhero.GetBuffCount("kogmawlivingartillerycost") == slider(combo, "CRMAX")) return;
 
                   /*  if (slider(combo, "CRDELAY") > 0 && DemSpells.R.IsReady((uint)slider(combo, "CRDELAY"))) DemSpells.R.Cast(rpred.CastPosition);
                     else if (slider(combo, "CRDELAY") == 0 && DemSpells.R.IsReady()) DemSpells.R.Cast(rpred.CastPosition);*/
-                    DemSpells.R.Cast(rpred.CastPosition);
+                    Core.DelayAction(() => DemSpells.R.Cast(rpred.CastPosition),(int)slider(combo, "CRDELAY"));
                 }
 
 
@@ -579,7 +579,7 @@ namespace T7_KogMaw
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Use R", true));
             combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R", 1, "100%", "50%", "25%"));
-          //  combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(ms)", 200, 0, 4000));
+            combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(seconds)", 1.0f, 0.0f, 4.0f));
             combo.Add("CRMAX", new Slider("Max R Stacks", 5, 1, 10));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
