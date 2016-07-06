@@ -224,7 +224,7 @@ namespace T7_KogMaw
                 var qpred = DemSpells.Q.GetPrediction(target);
                 var epred = DemSpells.E.GetPrediction(target);
                 var rpred = DemSpells.R.GetPrediction(target);
-                
+                if (target.IsDead) return;
                 if (check(combo, "CQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range - 10) &&
                     qpred.HitChancePercent >= slider(pred, "Qpred") && !qpred.Collision)
                 {
