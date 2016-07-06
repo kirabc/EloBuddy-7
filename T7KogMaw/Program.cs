@@ -224,7 +224,7 @@ namespace T7_KogMaw
                 var qpred = DemSpells.Q.GetPrediction(target);
                 var epred = DemSpells.E.GetPrediction(target);
                 var rpred = DemSpells.R.GetPrediction(target);
-                if (target.IsDead) return;
+
                 if (check(combo, "CQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range - 10) &&
                     qpred.HitChancePercent >= slider(pred, "Qpred") && !qpred.Collision)
                 {
@@ -243,14 +243,14 @@ namespace T7_KogMaw
                 }
 
                 if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) &&
-                   rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff())
+                   rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff() && !target.IsDead)
                 {
                     if (myhero.HasBuff("kogmawlivingartillerycost") &&
                          myhero.GetBuffCount("kogmawlivingartillerycost") == slider(combo, "CRMAX")) return;
 
                   /*  if (slider(combo, "CRDELAY") > 0 && DemSpells.R.IsReady((uint)slider(combo, "CRDELAY"))) DemSpells.R.Cast(rpred.CastPosition);
                     else if (slider(combo, "CRDELAY") == 0 && DemSpells.R.IsReady()) DemSpells.R.Cast(rpred.CastPosition);*/
-                    Core.DelayAction(() => DemSpells.R.Cast(rpred.CastPosition),(int)slider(combo, "CRDELAY") * 1000);
+                    DemSpells.R.Cast(rpred.CastPosition);
                 }
 
 
