@@ -31,7 +31,7 @@ namespace T7_KogMaw
         private static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "KogMaw") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#0B7D0B'> KogMaw</font> : Loaded!(v1.0)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#0B7D0B'> KogMaw</font> : Loaded!(v1.0b)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -588,7 +588,6 @@ namespace T7_KogMaw
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Use R", true));
             combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R", 1, "100%", "50%", "25%"));
-            combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(seconds)", 1, 0, 4));
             combo.Add("CRMAX", new Slider("Max R Stacks", 5, 1, 10));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
