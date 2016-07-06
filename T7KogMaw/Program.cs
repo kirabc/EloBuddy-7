@@ -246,7 +246,7 @@ namespace T7_KogMaw
                    rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff() && target.Health > 1)
                 {
                     if (myhero.HasBuff("kogmawlivingartillerycost") &&
-                         myhero.GetBuffCount("kogmawlivingartillerycost") == slider(combo, "CRMAX")) return;
+                         myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
                     switch(comb(combo, "CRMIN"))
                     {
                         case 0:
