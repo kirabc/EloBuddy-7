@@ -47,7 +47,7 @@ namespace T7_KogMaw
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
-
+            
             var flags = Orbwalker.ActiveModesFlags;
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo)) { Combo(); }
@@ -224,7 +224,7 @@ namespace T7_KogMaw
                 var qpred = DemSpells.Q.GetPrediction(target);
                 var epred = DemSpells.E.GetPrediction(target);
                 var rpred = DemSpells.R.GetPrediction(target);
-
+                Chat.Print(ComboDamage(target));
                 if (check(combo, "CQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range - 10) &&
                     qpred.HitChancePercent >= slider(pred, "Qpred") && !qpred.Collision)
                 {
