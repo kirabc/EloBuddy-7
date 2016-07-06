@@ -243,14 +243,23 @@ namespace T7_KogMaw
                 }
 
                 if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) &&
-                   rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff() && !target.IsDead)
+                   rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff() && target.Health > 1)
                 {
                     if (myhero.HasBuff("kogmawlivingartillerycost") &&
                          myhero.GetBuffCount("kogmawlivingartillerycost") == slider(combo, "CRMAX")) return;
-
-                  /*  if (slider(combo, "CRDELAY") > 0 && DemSpells.R.IsReady((uint)slider(combo, "CRDELAY"))) DemSpells.R.Cast(rpred.CastPosition);
-                    else if (slider(combo, "CRDELAY") == 0 && DemSpells.R.IsReady()) DemSpells.R.Cast(rpred.CastPosition);*/
-                    DemSpells.R.Cast(rpred.CastPosition);
+                    switch(comb(combo, "CRMIN")
+                    {
+                        case 0:
+                            if(target.HealthPercent <= 100) DemSpells.R.Cast(rpred.CastPosition); 
+                            break;
+                        case 1:
+                            if(target.HealthPercent <= 50) DemSpells.R.Cast(rpred.CastPosition);
+                            break;
+                        case 2:
+                            if(target.HealthPercent <= 25) DemSpells.R.Cast(rpred.CastPosition);
+                            break;
+                    }
+                    
                 }
 
 
