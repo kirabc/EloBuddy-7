@@ -242,7 +242,7 @@ namespace T7_KogMaw
                     DemSpells.E.Cast(epred.CastPosition);
                 }
 
-                if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) && ComboDamage(target) > target.Health &&
+                if (check(combo, "CR") && DemSpells.R.IsLearned && target.IsValidTarget(new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level]) /*&& ComboDamage(target) > target.Health */&&
                    rpred.HitChancePercent >= slider(pred, "RPred") && !target.HasUndyingBuff())
                 {
                     if (myhero.HasBuff("kogmawlivingartillerycost") &&
