@@ -34,15 +34,10 @@ namespace T7_Alistar
             Game.OnTick += OnTick;
             potion = new Item((int)ItemId.Health_Potion);
             Player.LevelSpell(SpellSlot.Q);    
-            Obj_AI_Base.OnProcessSpellCast += OnProcessSpellCast;
             AttackableUnit.OnDamage += OnDamage;
             DatMenu();
         }
 
-        private static void OnProcessSpellCast(Obj_AI_Base sender ,  GameObjectProcessSpellCastEventArgs args)
-        {
-            
-        }
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
