@@ -29,7 +29,7 @@ namespace T7MordeOP
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             Game.OnUpdate += OnUpdate;
-            Gapcloser.OnGapcloser += OnGapcloser
+            Gapcloser.OnGapcloser += OnGapcloser;
             DatMenu();
             Game.OnTick += OnTick;
             Player.LevelSpell(SpellSlot.E);
