@@ -27,6 +27,7 @@ namespace T7_Fiora
         public static Item cutl { get; private set; }
         public static Item blade { get; private set; }
         public static Item yomus { get; private set; }
+        public static Item potion { get; private set; }
 
         private static void OnLoad(EventArgs args)
         {
@@ -45,6 +46,7 @@ namespace T7_Fiora
             cutl = new Item((int)ItemId.Bilgewater_Cutlass, 550);
             blade = new Item((int)ItemId.Blade_of_the_Ruined_King, 550);
             yomus = new Item((int)ItemId.Youmuus_Ghostblade);
+            potion = new Item((int)ItemId.Health_Potion);
             Player.LevelSpell(SpellSlot.Q);
             SpellBlock.Initialize();
         }
@@ -392,6 +394,12 @@ namespace T7_Fiora
 
             if (check(misc, "skinhax")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
 
+            if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
+                    myhero.HealthPercent <= slider(misc, "POTMIN"))
+            {
+                potion.Cast();
+            }
+
             if (target != null)
             {
                 var qpred = DemSpells.Q.GetPrediction(target);
@@ -514,7 +522,7 @@ namespace T7_Fiora
                 return;
             }
 
-            if (SpellDatabase.GetByName(args.SData.Name) != null && !check(blocking, "evade"))
+            if (Evade.SpellDatabase.GetByName(args.SData.Name) != null && !check(blocking, "evade"))
                 return;
 
             if (!SpellBlock.Contains(unit, args))
@@ -545,8 +553,8 @@ namespace T7_Fiora
             if (unit.ChampionName.Equals("Caitlyn") && args.Slot == SpellSlot.Q)
             {
                 Core.DelayAction(() => CastW(castUnit),
-                    (int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
-                    (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500);
+                    ((int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
+                    (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500) + 250);
             }
             if (unit.ChampionName.Equals("Zyra"))
             {
@@ -596,9 +604,9 @@ namespace T7_Fiora
                     (unit.ChampionName.Equals("Caitlyn") && args.Slot.Equals(SpellSlot.R)))
                 {
                     var d = unit.Distance(Player.Instance);
-                    var travelTime = d / args.SData.MissileSpeed;
-                    var delay = travelTime * 1000 - DemSpells.W.CastDelay + 150;
-                    Console.WriteLine("TT: " + travelTime + " " + delay);
+                    var travelTime = d / 3200;
+                    var delay = Math.Floor(travelTime * 1000) + 900;
+                    Console.WriteLine("TT: " + travelTime + " Delay: " + delay);
                     Core.DelayAction(() => CastW(castUnit), (int)delay);
                     return;
                 }
@@ -718,10 +726,14 @@ namespace T7_Fiora
             misc.Add("ksW", new CheckBox("Killsteal with W", true));
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));           
             misc.AddSeparator();
-            misc.AddGroupLabel("Auto Level Up Spells");
+            misc.AddLabel("Auto Potion");
+            misc.Add("AUTOPOT", new CheckBox("Activate Auto Potion", true));
+            misc.Add("POTMIN", new Slider("Min Health % To Active Potion", 25, 1, 100));
+            misc.AddSeparator();
+            misc.AddLabel("Auto Level Up Spells");
             misc.Add("autolevel", new CheckBox("Activate Auto Level Up Spells", true));
             misc.AddSeparator();
-            misc.AddGroupLabel("Skin Hack");
+            misc.AddLabel("Skin Hack");
             misc.Add("skinhax", new CheckBox("Activate Skin hack", true));
             misc.Add("skinID", new ComboBox("Skin Hack", 3, "Default", "Royal Guard", "Nightraven", "Headmistress", "PROJECT:"));
 
