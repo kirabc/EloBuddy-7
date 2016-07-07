@@ -1,4 +1,4 @@
-﻿using EloBuddy;
+using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Enumerations;
 using EloBuddy.SDK.Events;
@@ -51,7 +51,12 @@ namespace T7_Fiora
             BlockedSpells.Add(
                 "Braum", new List<BlockedSpell> { new BlockedSpell("BraumBasicAttackPassiveOverride", "Stun", true) });
             BlockedSpells.Add(
-                "Caitlyn", new List<BlockedSpell> { new BlockedSpell("CaitlynHeadshotMissile", "Headshot", true), r });
+                "Caitlyn", new List<BlockedSpell> 
+                { 
+                    new BlockedSpell("CaitlynHeadshotMissile", "Headshot", true) { IsAutoAttack = true },
+                    q, 
+                    r 
+                });
             BlockedSpells.Add("Chogath", new List<BlockedSpell> { r });
             BlockedSpells.Add(
                 "Darius",
