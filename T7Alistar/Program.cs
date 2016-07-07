@@ -143,7 +143,7 @@ namespace T7_Alistar
             var KnockbackPos = myhero.Position.Extend(target.Position, 650);
             var ClosestAlly = EntityManager.Heroes.Allies.Where(x => !x.IsDead && x.IsAlly && x.Distance(target.Position) < 1200).OrderBy(x => x.Distance(target.Position)).FirstOrDefault();
 
-        /*    if (target != null && !target.IsInvulnerable)
+            if (target != null && !target.IsInvulnerable)
             {
 
                 if (check(combo, "CQ") && check(combo, "CW") && (DemSpells.Q.IsLearned && DemSpells.W.IsLearned) && (DemSpells.Q.IsReady() && DemSpells.W.IsReady()) &&
@@ -169,7 +169,7 @@ namespace T7_Alistar
                         DemSpells.W.Cast(target);
                     }
                 }
-            }*/
+            }
         }
 
         private static void Harass()
