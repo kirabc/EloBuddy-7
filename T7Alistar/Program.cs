@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
@@ -19,6 +19,7 @@ namespace T7_Alistar
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu, combo, harass, laneclear, misc, draw;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
+        private static Spell.Targeted flash = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerflash"),400);
         static readonly string ChampionName = "Alistar";
         public static Item potion { get; private set; }
 
@@ -53,6 +54,21 @@ namespace T7_Alistar
             Misc();
         }
 
+        private static void OnLvlUp(Obj_AI_Base sender, Obj_AI_BaseLevelUpEventArgs args)
+        {
+            if (!sender.IsMe) return;
+
+            /*>>*/
+            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.Unknown, SpellSlot.W, SpellSlot.E,
+                                        SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, 
+                                        SpellSlot.W, SpellSlot.Q, SpellSlot.W, SpellSlot.R, 
+                                        SpellSlot.W, SpellSlot.W, SpellSlot.E, SpellSlot.E, 
+                                        SpellSlot.R, SpellSlot.E, SpellSlot.E };
+
+            if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
+        }
+
+        #region Extensions
         private static bool check(Menu submenu, string sig)
         {
             return submenu[sig].Cast<CheckBox>().CurrentValue;
@@ -71,20 +87,6 @@ namespace T7_Alistar
         private static bool key(Menu submenu, string sig)
         {
             return submenu[sig].Cast<KeyBind>().CurrentValue;
-        }
-
-        private static void OnLvlUp(Obj_AI_Base sender, Obj_AI_BaseLevelUpEventArgs args)
-        {
-            if (!sender.IsMe) return;
-
-            /*>>*/
-            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.Unknown, SpellSlot.W, SpellSlot.E,
-                                        SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, 
-                                        SpellSlot.W, SpellSlot.Q, SpellSlot.W, SpellSlot.R, 
-                                        SpellSlot.W, SpellSlot.W, SpellSlot.E, SpellSlot.E, 
-                                        SpellSlot.R, SpellSlot.E, SpellSlot.E };
-
-            if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
         }
 
     /*    private static float ComboDamage(AIHeroClient target)
@@ -121,28 +123,117 @@ namespace T7_Alistar
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, WDamage);
         }
 
-        private static int QWcost()
+        private static int WQcost()
         {
             int QCost = new int[] { 0, 65, 70, 75, 80, 85 }[DemSpells.Q.Level];
             int WCost = new int[] { 0, 65, 70, 75, 80, 85 }[DemSpells.W.Level];
 
             return QCost + WCost;
         }
-        
+       
+        private static void WQinsec(AIHeroClient target)
+        {
+            var MaxRange = flash.Range + DemSpells.W.Range - 5;
+
+            var delay = Math.Max(0, target.Distance(myhero.Position) - 365) / 1.2f - 25; 
+
+            if (myhero.Mana < WQcost()) return;
+
+            if(flash.Cast(myhero.Position.Extend(target.Position, flash.Range).To3D()))
+            {
+                Core.DelayAction(delegate 
+                {
+                    if(DemSpells.W.Cast(target))
+                    {
+                        Core.DelayAction(() => DemSpells.Q.Cast(), (int)(target.Distance(myhero.Position) / 1.2f));
+                    }
+                }, 50);
+            }
+        }
+
+        #endregion Extensions
+
+        #region Insec
+        private static void Insec()
+        {
+            if (!key(misc, "INSECKEY")) return;
+
+            var MaxRange = flash.Range + DemSpells.W.Range - 5;
+
+           /* switch(comb(misc, "INSECMODE"))
+            {
+                case 0:
+                    if(flash.IsReady() && DemSpells.W.IsReady() && DemSpells.Q.IsReady() &&
+                       myhero.CountEnemiesInRange(1500) >= slider(misc, "AOEMIN"))
+                    {
+                        var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsEnemy && x.IsValidTarget(MaxRange));
+
+                        if(Enemies != null)
+                        {
+                            if(Enemies.Count() == 1)
+                            {
+                                var enemy = Enemies.ToList().FirstOrDefault();
+
+                                if(Extensions.CountEnemiesInRange(enemy,180) >= slider(misc, "AOEMIN"))
+                                {
+                                    WQinsec(enemy);
+                                }
+                            }
+                            else if(Enemies.Count() > 1)
+                            {
+                                foreach(var enemy in Enemies.OrderBy(x => x.Distance(myhero.Position)))
+                                {
+                                    if(Extensions.CountEnemiesInRange(enemy,180) > slider(misc, "AOEMIN"))
+                                    {
+                                            WQinsec(enemy);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case 1:*/
+                    var ClosestTurret = EntityManager.Turrets.Allies.Where(x => x.Health > 50 && x.Distance(myhero.Position) < 1400).OrderBy(x => x.Distance(myhero.Position)).FirstOrDefault();
+
+                    var ClosestEnemy = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.Health > 50 && x.IsValidTarget(flash.Range + 60)).OrderBy(x => x.Distance(myhero.Position)).FirstOrDefault();
+
+                    if(flash.IsReady() && DemSpells.W.IsReady() && ClosestTurret != null && ClosestEnemy != null)
+                    {
+                         if(ClosestEnemy.Distance(ClosestTurret.Position) < 1400)
+                         { 
+                            var Distance = ClosestEnemy.Distance(ClosestTurret.Position);
+     
+                            var flashloc = ClosestTurret.Position.Extend(ClosestEnemy.Position, Distance + 60).To3D();
+
+                            if(flash.Cast(flashloc))
+                            {
+                                Core.DelayAction( () => DemSpells.W.Cast(ClosestEnemy), 50);
+                            }
+                         }
+                    }
+                 //   break;
+                    
+            //}
+        }
+        #endregion Insec
 
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
-            var delay = Math.Max(0, target.Distance(myhero.Position) - 365) / 1.2f - 25;
-            var CurrentPos = target.Position;
-            var KnockbackPos = myhero.Position.Extend(target.Position, 650);
-            var ClosestAlly = EntityManager.Heroes.Allies.Where(x => !x.IsDead && x.IsAlly && x.Distance(target.Position) < 1200).OrderBy(x => x.Distance(target.Position)).FirstOrDefault();
+
+            if (EntityManager.Heroes.Allies.Count() > 0)
+            {
+               var ClosestAlly = EntityManager.Heroes.Allies.Where(x => !x.IsDead && x.IsAlly && x.Distance(target.Position) < 1200).OrderBy(x => x.Distance(target.Position)).FirstOrDefault();
+            }
 
             if (target != null && !target.IsInvulnerable)
             {
+                var delay = Math.Max(0, target.Distance(myhero.Position) - 365) / 1.2f - 25;
+                var CurrentPos = target.Position;
+                var KnockbackPos = myhero.Position.Extend(target.Position, 650);
 
                 if (check(combo, "CQ") && check(combo, "CW") && (DemSpells.Q.IsLearned && DemSpells.W.IsLearned) && (DemSpells.Q.IsReady() && DemSpells.W.IsReady()) &&
-                    target.IsValidTarget(DemSpells.W.Range) && myhero.Mana >= QWcost())
+                    target.IsValidTarget(DemSpells.W.Range) && myhero.Mana >= WQcost())
                 {
                     if (DemSpells.Q.IsInRange(target.Position)) DemSpells.Q.Cast();
 
@@ -156,8 +247,10 @@ namespace T7_Alistar
                 {
                     DemSpells.Q.Cast();
                 }
-                else if (check(combo, "CW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && target.IsValidTarget(DemSpells.W.Range) && ClosestAlly != null)
+                else if (check(combo, "CW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() && target.IsValidTarget(DemSpells.W.Range) && EntityManager.Heroes.Allies.Count() > 0)
                 {
+                    var ClosestAlly = EntityManager.Heroes.Allies.Where(x => !x.IsDead && x.IsAlly && x.Distance(target.Position) < 1200).OrderBy(x => x.Distance(target.Position)).FirstOrDefault();
+
                     if (ClosestAlly.Distance(KnockbackPos.To3D()) < ClosestAlly.Distance(CurrentPos) ||
                             Extensions.CountAlliesInRange(KnockbackPos, 1000) > 0)
                     {
@@ -255,7 +348,7 @@ namespace T7_Alistar
 
             if(enemies != null)
             {
-                if (check(misc, "R") && comb(misc, "RMODE") == 0 && DemSpells.R.IsLearned && DemSpells.R.IsReady() && myhero.HealthPercent <= slider(misc, "RMINH") &&
+                if (key(misc, "RKEY") && comb(misc, "RMODE") == 0 && DemSpells.R.IsLearned && DemSpells.R.IsReady() && myhero.HealthPercent <= slider(misc, "RMINH") &&
                 myhero.CountEnemiesInRange(1000) > 0)
                 {
                     if (enemies.Where(x => x.Distance(myhero.Position) < 500).Count() >= slider(misc, "RMINE"))
@@ -263,9 +356,9 @@ namespace T7_Alistar
                         DemSpells.R.Cast();
                     }
                 }
-            }
-            
-        
+
+                Insec();
+            }                     
         } 
 
         private static void OnDraw(EventArgs args)
@@ -302,11 +395,34 @@ namespace T7_Alistar
 
             }
 
-            if (check(draw, "DRAWHEAL"))
+            if (check(draw, "DRAWMODES"))
             {
-                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50, Drawing.WorldToScreen(myhero.Position).Y + 10,
-                                 key(misc, "EKEY") ? Color.Green : Color.Red, key(misc, "EKEY") ? "Auto Healing: ON" : "Auto Healing: OFF");
-            }
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 10,
+                                 Color.White,
+                                 "Auto Healing: ");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X + 37,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 10,
+                                 key(misc, "EKEY") ? Color.Green : Color.Red,
+                                 key(misc, "EKEY") ? "ON" : "OFF");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 25,
+                                 Color.White,
+                                 "Auto R: ");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X ,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 25,
+                                 key(misc, "RKEY") ? Color.Green : Color.Red,
+                                 key(misc, "RKEY") ? "ON" : "OFF");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 40,
+                                 Color.White,
+                                 "Insec: ");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 9 ,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 40,
+                                 key(misc, "INSECKEY") ? Color.Green : Color.Red,
+                                 key(misc, "INSECKEY") ? "ON" : "OFF");
+          
+            }         
         }
 
         private static void OnGapcloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
@@ -360,7 +476,7 @@ namespace T7_Alistar
 
         private static void OnDamage(AttackableUnit sender, AttackableUnitDamageEventArgs args)
         {
-            if (!check(misc, "R" ) || comb(misc, "RMODE") != 1 || !DemSpells.R.IsReady() ||
+            if (!key(misc, "RKEY" ) || comb(misc, "RMODE") != 1 || !DemSpells.R.IsReady() ||
                 myhero.CountEnemiesInRange(1200) == 0) return;
 
             if (args.Target.NetworkId != myhero.NetworkId ||
@@ -386,7 +502,7 @@ namespace T7_Alistar
             misc = menu.AddSubMenu("Misc", "misc");           
 
             menu.AddGroupLabel("Welcome to T7 " + ChampionName + " And Thank You For Using!");
-            menu.AddLabel("Version 1.0 7/7/2016");
+            menu.AddLabel("Version 1.0 14/7/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -422,7 +538,7 @@ namespace T7_Alistar
             draw.Add("drawE", new CheckBox("Draw E Range", true));
             draw.AddSeparator();
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
-            draw.Add("DRAWHEAL", new CheckBox("Draw Auto Healing Status", true));
+            draw.Add("DRAWMODES", new CheckBox("Draw Status Of All Modes", true));
 
             misc.AddSeparator();
             misc.AddGroupLabel("Auto Healing(E)");
@@ -436,10 +552,10 @@ namespace T7_Alistar
             misc.AddLabel("Mana Manager");
             misc.Add("EMIN", new Slider("Min Mana % To Auto Heal", 50, 1, 100));            
             misc.AddSeparator();
-            misc.AddLabel("______________________________________________________________________________");
+            misc.AddLabel("_____________________________________________________________________________");
             misc.AddSeparator();
             misc.AddGroupLabel("R usage");
-            misc.Add("R", new CheckBox("Auto Use R", false));
+            misc.Add("RKEY", new KeyBind("Auto R Hotkey", false, KeyBind.BindTypes.PressToggle, 'J'));
             misc.Add("RMODE", new ComboBox("R Mode", 1, "Min Health & Enemies", "% Damage Dealt"));
             misc.AddLabel("R Mode Settings:",6);
             misc.AddLabel("Min Health");
@@ -448,7 +564,16 @@ namespace T7_Alistar
             misc.Add("RMINE", new Slider("More Than X Enemies Nearby", 1, 1, 5));
             misc.AddLabel("Min Damage Dealt %");
             misc.Add("RMIND", new Slider("Min % Damage Dealt By Enemy",80,1,100 ));
-            misc.AddSeparator(2);
+            misc.AddSeparator();
+            misc.AddLabel("_____________________________________________________________________________");
+            misc.AddSeparator();
+            misc.AddGroupLabel("Insec");
+            misc.Add("INSECKEY", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, 'I'));
+          //  misc.Add("INSECMODE", new ComboBox("Insec Mode", 0, "Flash + WQ", "Flash + W"));
+           // misc.Add("AOEMIN", new Slider("Min Enemies To Hit With Flash + WQ", 2, 1, 5));
+            misc.AddSeparator();
+            misc.AddLabel("_____________________________________________________________________________");
+            misc.AddSeparator();
             misc.AddGroupLabel("Killsteal");
             misc.Add("KSQ", new CheckBox("Killsteal with Q", false));
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));
