@@ -485,8 +485,9 @@ namespace T7_Alistar
             var player = args.Target;
             int DamageDealt = (int)Math.Floor((args.Damage / player.MaxHealth) * 100);
 
-            if (DamageDealt >= slider(misc, "RMIND") && !player.IsDead && player.IsMe && player.IsAlly && player.NetworkId == myhero.NetworkId &&
-                myhero.CountEnemiesInRange(700) >= 1)
+            Chat.Print(DamageDealt);
+            if ((DamageDealt >= slider(misc, "RMIND") || player.HealthPercent < slider(misc, "RMINH")) && !player.IsDead && player.IsMe && player.IsAlly && player.NetworkId == myhero.NetworkId &&
+                myhero.CountEnemiesInRange(700) >= slider(misc, "RMINE"))
             {
                 DemSpells.R.Cast();
             }
@@ -502,7 +503,7 @@ namespace T7_Alistar
             misc = menu.AddSubMenu("Misc", "misc");           
 
             menu.AddGroupLabel("Welcome to T7 " + ChampionName + " And Thank You For Using!");
-            menu.AddLabel("Version 1.0 14/7/2016");
+            menu.AddLabel("Version 1.0 7/7/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
