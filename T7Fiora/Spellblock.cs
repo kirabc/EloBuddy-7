@@ -58,6 +58,8 @@ namespace T7_Fiora
                     r 
                 });
             BlockedSpells.Add("Chogath", new List<BlockedSpell> { r });
+            BlockedSpells.Add("Lux", new List<BlockedSpell> { q , r });
+            BlockedSpells.Add("Ezreal", new List<BlockedSpell> { q, w, r });
             BlockedSpells.Add(
                 "Darius",
                 new List<BlockedSpell>
@@ -107,6 +109,7 @@ namespace T7_Fiora
                 "Illaoi", new List<BlockedSpell> { new BlockedSpell("illaoiwattack", "Empowered W", true) });
             BlockedSpells.Add("Irelia", new List<BlockedSpell> { q, e });
             BlockedSpells.Add("Janna", new List<BlockedSpell> { w });
+            BlockedSpells.Add("Amumu", new List<BlockedSpell> { q, r });
             BlockedSpells.Add(
                 "JarvanIV",
                 new List<BlockedSpell> { new BlockedSpell("JarvanIVMartialCadenceAttack", "Martial Cadence", true), r });
@@ -138,6 +141,7 @@ namespace T7_Fiora
                 "Kennen", new List<BlockedSpell> { new BlockedSpell("KennenMegaProc", "Empowered", true), w });
             BlockedSpells.Add("Khazix", new List<BlockedSpell> { q });
             BlockedSpells.Add("Kindred", new List<BlockedSpell> { e });
+            BlockedSpells.Add("KogMaw", new List<BlockedSpell> { q,e,r });
             //new BlockedSpell((SpellSlot) 48) { SpellName = "kindredbasicattackoverridelightbombfinal", Name = "Empowered E" } });
             BlockedSpells.Add("Leblanc", new List<BlockedSpell> { q, new BlockedSpell("LeblancChaosOrbM", "Block RQ") });
             BlockedSpells.Add(
@@ -156,7 +160,7 @@ namespace T7_Fiora
                 "Leona", new List<BlockedSpell> { new BlockedSpell("LeonaShieldOfDaybreakAttack", "Stun Q", true) });
             BlockedSpells.Add("Lissandra", new List<BlockedSpell> { new BlockedSpell(N48) { Name = "R" } });
             BlockedSpells.Add("Lulu", new List<BlockedSpell> { w });
-            BlockedSpells.Add("Malphite", new List<BlockedSpell> { q, e });
+            BlockedSpells.Add("Malphite", new List<BlockedSpell> { q, e, r });
             BlockedSpells.Add("Malzahar", new List<BlockedSpell> { e, r });
             BlockedSpells.Add("Maokai", new List<BlockedSpell> { w });
             BlockedSpells.Add(
@@ -167,6 +171,7 @@ namespace T7_Fiora
             BlockedSpells.Add(
                 "Mordekaiser",
                 new List<BlockedSpell> { new BlockedSpell("mordekaiserqattack2", "Empowered Q", true), r });
+            BlockedSpells.Add("Morgana", new List<BlockedSpell> { q, r });
             BlockedSpells.Add("Nami", new List<BlockedSpell> { w });
             BlockedSpells.Add(
                 "Nasus", new List<BlockedSpell> { new BlockedSpell("NasusQAttack", "Empowered Q", true), q });
@@ -234,14 +239,22 @@ namespace T7_Fiora
                 "Shen",
                 new List<BlockedSpell>
                 {
-                    new BlockedSpell("ShenQAttack", "Empowered", true) { BuffName = "shenqbuff", IsSelfBuff = true }
+                    new BlockedSpell("ShenQAttack", "Empowered", true) { BuffName = "shenqbuff", IsSelfBuff = true },
+                    e
                 });
             BlockedSpells.Add(
-                "Shyvana", new List<BlockedSpell> { new BlockedSpell("ShyvanaDoubleAttackHit", "Empowered Q", true) });
+                "Shyvana", new List<BlockedSpell> 
+                { 
+                    new BlockedSpell("ShyvanaDoubleAttackHit", "Empowered Q", true),
+                    e,
+                    r
+                });
             BlockedSpells.Add("Singed", new List<BlockedSpell> { e });
             BlockedSpells.Add("Sion", new List<BlockedSpell> { q, r });
             BlockedSpells.Add("Skarner", new List<BlockedSpell> { r });
             BlockedSpells.Add("Syndra", new List<BlockedSpell> { r });
+            BlockedSpells.Add("Karthus", new List<BlockedSpell> { q, r });
+            BlockedSpells.Add("Ashe", new List<BlockedSpell> { r });
             BlockedSpells.Add("Swain", new List<BlockedSpell> { q, e });
             BlockedSpells.Add(
                 "Talon",
@@ -272,7 +285,7 @@ namespace T7_Fiora
                     },
                     e
                 });
-            BlockedSpells.Add("Veigar", new List<BlockedSpell> { r });
+            BlockedSpells.Add("Veigar", new List<BlockedSpell> { q, r });
             BlockedSpells.Add(
                 "Vi",
                 new List<BlockedSpell>
@@ -311,6 +324,7 @@ namespace T7_Fiora
                 });
             BlockedSpells.Add("Zac", new List<BlockedSpell> { w, r });
             BlockedSpells.Add("Zilean", new List<BlockedSpell> { e });
+            BlockedSpells.Add("Ziggs", new List<BlockedSpell> { r });
 
             var enemies = EntityManager.Heroes.Enemies;
 
