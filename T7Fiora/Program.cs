@@ -32,7 +32,7 @@ namespace T7_Fiora
         private static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "Fiora") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#FF0505'> Fiora</font> : Loaded!(v1.1)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#FF0505'> Fiora</font> : Loaded!(v1.2)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -92,7 +92,7 @@ namespace T7_Fiora
                                         SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E, 
                                         SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E, 
                                         SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, 
-                                        SpellSlot.W , SpellSlot.W };
+                                        SpellSlot.W , SpellSlot.W,SpellSlot.Unknown };
 
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
         }
@@ -241,17 +241,13 @@ namespace T7_Fiora
                     if ((ComboDamage(target) - PassiveManager.GetPassiveDamage(target, 4) > target.Health) ||
                        (ignt.IsReady() && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)) return;
 
-                    if (check(combo, "CRTURRET"))
+                    if(check(combo, "CRTURRET"))
                     {
-                        var ClosestTurret = EntityManager.Turrets.Enemies.Where(x => x.Distance(target.Position) < 3000)
-                                                                          .OrderBy(x => x.Distance(target.Position))
-                                                                          .FirstOrDefault();
-                        if (ClosestTurret.Distance(target.Position) > (ClosestTurret.AttackRange + 350))
-                        {
-                            DemSpells.R.Cast(target);
-                        }
+                        var ClosestTurret = EntityManager.Turrets.Enemies.Where(x => x.IsTargetable).OrderBy(x => x.Distance(myhero.Position)).FirstOrDefault();
+
+                        if (ClosestTurret.Distance(target.Position) > 900) DemSpells.R.Cast(target);
                     }
-                    else { DemSpells.R.Cast(target); }
+                    else DemSpells.R.Cast(target); 
 
                 }
 
@@ -556,12 +552,61 @@ namespace T7_Fiora
                     ((int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
                     (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500) + 250);
             }
+            if (unit.ChampionName.Equals("Darius") && args.Slot == SpellSlot.Q && unit.Distance(myhero.Position) < 420)
+            {
+                Core.DelayAction(() => CastW(castUnit), 700);
+            }
+            if (unit.ChampionName.Equals("Malphite") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
+            {
+                Core.DelayAction(() => CastW(castUnit),
+                    ((int)(args.Start.Distance(Player.Instance) / 700 * 1000) -
+                    (int)(args.End.Distance(Player.Instance) / 700) - 500) + 100);
+            }
+            if (unit.ChampionName.Equals("Morgana") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
+            {
+                Core.DelayAction(() => CastW(castUnit), 3000);
+            }
+            if (unit.ChampionName.Equals("KogMaw") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 240)
+            {
+                Core.DelayAction(() => CastW(castUnit), 1200);
+            }
+            if (unit.ChampionName.Equals("Ziggs") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 550)
+            {
+                Core.DelayAction(() => CastW(castUnit),
+                    ((int)(args.Start.Distance(Player.Instance) / 2800 * 1000) -
+                    (int)(args.End.Distance(Player.Instance) / 2800) - 500) + 900);
+            }
+            if (unit.ChampionName.Equals("Karthus") && (args.Slot == SpellSlot.R || args.Slot == SpellSlot.Q))
+            {
+                switch (args.Slot)
+                {
+                    case SpellSlot.R:
+                        Core.DelayAction(() => CastW(castUnit), 2900);
+                        break;
+                    case SpellSlot.Q:
+                        if (Prediction.Position.PredictUnitPosition(myhero, 450).Distance(args.Target.Position) < 100)
+                        {
+                            Core.DelayAction(() => CastW(castUnit), 450);
+                        }
+                        break;
+                }
+            }
+            if (unit.ChampionName.Equals("Shen") && args.Slot == SpellSlot.E && args.End.Distance(myhero.Position) < 100)
+            {
+                Core.DelayAction(() => CastW(castUnit),
+                    ((int)(args.Start.Distance(Player.Instance) / 1600 * 1000) -
+                    (int)(args.End.Distance(Player.Instance) / 1600) - 500) + 250);
+            }
             if (unit.ChampionName.Equals("Zyra"))
             {
                     Core.DelayAction(() => CastW(castUnit),
                         (int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
                         (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500);
             }
+            if (unit.ChampionName.Equals("Amumu") && args.Slot == SpellSlot.R && unit.Distance(myhero.Position) <= 550)
+            {
+                CastW(castUnit);
+            } 
             if (args.End.Distance(Player.Instance) < 250)
             {
                 if (unit.ChampionName.Equals("Bard") && args.End.Distance(Player.Instance) < 300)
@@ -578,9 +623,14 @@ namespace T7_Fiora
                 else if (unit.ChampionName.Equals("Varus") || unit.ChampionName.Equals("TahmKench") ||
                          unit.ChampionName.Equals("Lux"))
                 {
+                    if (unit.ChampionName.Equals("Lux") && args.Slot == SpellSlot.R)
+                    {
+                        Core.DelayAction(() => CastW(castUnit), 400);
+                    }
                     Core.DelayAction(() => CastW(castUnit),
                         (int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
                         (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500);
+
                 }
                 else if (unit.ChampionName.Equals("Amumu"))
                 {
@@ -675,7 +725,7 @@ namespace T7_Fiora
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Fiora And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.1 5/7/2016");
+            menu.AddGroupLabel("Version 1.2 17/7/2016");
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -735,7 +785,7 @@ namespace T7_Fiora
             misc.AddSeparator();
             misc.AddLabel("Skin Hack");
             misc.Add("skinhax", new CheckBox("Activate Skin hack", true));
-            misc.Add("skinID", new ComboBox("Skin Hack", 3, "Default", "Royal Guard", "Nightraven", "Headmistress", "PROJECT:"));
+            misc.Add("skinID", new ComboBox("Skin Hack", 3, "Default", "Royal Guard", "Nightraven", "Headmistress", "PROJECT:", "Pool Party"));
 
             blocking.Add("BLOCK", new CheckBox("Use W To Block Spells", true));        
             blocking.Add("evade", new CheckBox("Evade Integration", true));
