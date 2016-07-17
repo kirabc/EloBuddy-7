@@ -19,7 +19,7 @@ namespace T7_Fiora
     {
         static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
-        public static Menu menu, combo, harass, laneclear, misc, draw, pred, fleee, blocking;
+        public static Menu menu, combo, harass, laneclear, misc, draw, pred, fleee, blocking, jungleclear;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         public static Item tiamat { get; private set; }
         public static Item rhydra { get; private set; }
@@ -168,7 +168,7 @@ namespace T7_Fiora
                     rhydra.Cast();
                 }
 
-                if (thydra.IsOwned() && thydra.IsReady() && target.Distance(myhero.Position) < myhero.AttackRange && !Orbwalker.CanAutoAttack)
+                if (thydra.IsOwned() && thydra.IsReady() && target.Distance(myhero.Position) < Player.Instance.GetAutoAttackRange() && !Orbwalker.CanAutoAttack)
                 {
                     thydra.Cast();
                 }
@@ -365,12 +365,55 @@ namespace T7_Fiora
                     }
 
                 }
+
+                if (rhydra.IsOwned() && rhydra.IsReady())
+                {
+                    int count = minions.Where(x => x.IsValid() && !x.IsDead && x.Distance(myhero.Position) <= rhydra.Range).Count();
+
+                    if (count >= slider(laneclear, "HYDRAMIN")) rhydra.Cast();                                        
+                }
+            }
+        }
+
+        private static void Jungleclear()
+        {
+            var Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1800f);
+
+            var WPred = EntityManager.MinionsAndMonsters.GetLineFarmLocation(Monsters, DemSpells.W.Width, (int)DemSpells.W.Range);
+
+            if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
+            {
+                foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 100))
+                {
+                    DemSpells.Q.Cast(monster.Position);
+                }
+            }
+
+            if (check(jungleclear, "JW") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
+            {
+                if (WPred.HitNumber >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast(WPred.CastPosition);
+            }
+
+            if (check(jungleclear, "JE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
+            {
+                int count = Monsters.Where(x => x.IsValid() && !x.IsDead && x.Distance(myhero.Position) <= Player.Instance.GetAutoAttackRange()).Count();
+
+                if (count >= slider(laneclear, "JEMIN")) DemSpells.E.Cast(); 
+            }
+
+            if (rhydra.IsOwned() && rhydra.IsReady())
+            {
+                int count = Monsters.Where(x => x.IsValid() && !x.IsDead && !x.Name.ToLower().Contains("mini") &&
+                                           x.Distance(myhero.Position) <= rhydra.Range)
+                                    .Count();
+
+                if (count >= 1) rhydra.Cast();
             }
         }
 
         private static void Flee()
         {
-            if (myhero.CountEnemiesInRange(1000) < slider(fleee, "FLEEMIN")) return;
+            if (myhero.CountEnemiesInRange(1000) < slider(fleee, "FLEEMIN") && slider(fleee,"FLEEMIN") != 0) return;
 
             if (check(fleee, "QFLEE") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
             {
@@ -718,6 +761,7 @@ namespace T7_Fiora
             combo = menu.AddSubMenu("Combo", "combo");
             harass = menu.AddSubMenu("Harass", "harass");
             laneclear = menu.AddSubMenu("Laneclear", "lclear");
+            jungleclear = menu.AddSubMenu("Jungleclear", "jclear");
             draw = menu.AddSubMenu("Drawings", "draw");
             misc = menu.AddSubMenu("Misc", "misc");
             fleee = menu.AddSubMenu("Flee", "fleeee");
@@ -761,7 +805,23 @@ namespace T7_Fiora
             laneclear.Add("LE", new CheckBox("Use E", true));
             laneclear.Add("LEMIN", new Slider("Min Minions To Hit With E", 2, 1, 10));
             laneclear.AddSeparator();
+            laneclear.Add("LHYDRA", new CheckBox("Use Hydra", true));
+            laneclear.Add("HYDRAMIN", new Slider("Min Minions Nearby To Use Hydra", 5, 1, 20));
+            laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
+
+            jungleclear.AddGroupLabel("Spells");
+            jungleclear.Add("JQ", new CheckBox("Use Q", false));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JW", new CheckBox("Use W", true));
+            jungleclear.Add("JWMIN", new Slider("Min Monsters To Hit With W", 1, 1, 4));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JE", new CheckBox("Use E", false));
+            jungleclear.Add("JEMIN", new Slider("Min Monsters To Cast W", 1, 1, 4));
+            jungleclear.AddSeparator();
+            laneclear.Add("JHYDRA", new CheckBox("Use Hydra", true));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 10, 0, 100));
 
             draw.Add("nodraw", new CheckBox("Disable All Drawings", false));
             draw.AddSeparator();
@@ -796,7 +856,7 @@ namespace T7_Fiora
             fleee.Add("QFLEE", new CheckBox("Use Q To Flee", true));
             fleee.AddLabel("(Casts To Mouse Position)", 1);
             fleee.AddSeparator();
-            fleee.Add("YOMUSFLEE", new CheckBox("Use Youmuu's Ghostblade While In Flee Mode", true));
+            fleee.Add("YOMUSFLEE", new CheckBox("Use Youmuu's Ghostblade While In Flee Mode", false));
             fleee.AddSeparator();
             fleee.Add("FLEEMIN", new Slider("Min Enemies In Range To Flee", 0, 0, 5));
 
