@@ -17,16 +17,17 @@ namespace T7_Alistar
     {
         static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
-        private static Menu menu, combo, harass, laneclear, misc, draw;
+        private static Menu menu, combo, harass, laneclear, misc, draw, jungleclear;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         private static Spell.Targeted flash = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerflash"),400);
         static readonly string ChampionName = "Alistar";
         public static Item potion { get; private set; }
+        public static Item biscuit { get; private set; }
 
         private static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != ChampionName) { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#346FC2'> " + ChampionName + "</font> : Loaded!(v1.0)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#346FC2'> " + ChampionName + "</font> : Loaded!(v1.1)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp; 
@@ -34,6 +35,7 @@ namespace T7_Alistar
             Interrupter.OnInterruptableSpell += OnInterrupt;
             Game.OnTick += OnTick;
             potion = new Item((int)ItemId.Health_Potion);
+            biscuit = new Item((int)ItemId.Total_Biscuit_of_Rejuvenation);
             Player.LevelSpell(SpellSlot.Q);    
             AttackableUnit.OnDamage += OnDamage;
             DatMenu();
@@ -43,6 +45,8 @@ namespace T7_Alistar
         {
             if (myhero.IsDead) return;
 
+            
+
             var flags = Orbwalker.ActiveModesFlags;
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo)) { Combo(); }
@@ -50,6 +54,8 @@ namespace T7_Alistar
             if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > harass["HMIN"].Cast<Slider>().CurrentValue) Harass();
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > laneclear["LMIN"].Cast<Slider>().CurrentValue) Laneclear();
+
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > slider(jungleclear, "JMIN")) Jungleclear(); 
 
             Misc();
         }
@@ -125,29 +131,33 @@ namespace T7_Alistar
 
         private static int WQcost()
         {
-            int QCost = new int[] { 0, 65, 70, 75, 80, 85 }[DemSpells.Q.Level];
-            int WCost = new int[] { 0, 65, 70, 75, 80, 85 }[DemSpells.W.Level];
-
-            return QCost + WCost;
+            int Cost = new int[] { 0, 65, 70, 75, 80, 85 }[DemSpells.Q.Level] + new int[] { 0, 65, 70, 75, 80, 85 }[DemSpells.W.Level];
+            return Cost;
         }
        
         private static void WQinsec(AIHeroClient target)
         {
-            var MaxRange = flash.Range + DemSpells.W.Range - 5;
-
-            var delay = Math.Max(0, target.Distance(myhero.Position) - 365) / 1.2f - 25; 
-
             if (myhero.Mana < WQcost()) return;
 
-            if(flash.Cast(myhero.Position.Extend(target.Position, flash.Range).To3D()))
+            if (target != null)
             {
-                Core.DelayAction(delegate 
+                var MaxRange = flash.Range + DemSpells.W.Range - 5;
+
+                var delay = Math.Max(0, target.Distance(myhero.Position) - 365) / 1.2f - 25;                
+
+                if (flash.Cast(myhero.Position.Extend(target.Position, flash.Range).To3D()))
                 {
-                    if(DemSpells.W.Cast(target))
+                    Core.DelayAction(delegate
                     {
-                        Core.DelayAction(() => DemSpells.Q.Cast(), (int)(target.Distance(myhero.Position) / 1.2f));
-                    }
-                }, 50);
+                        if (DemSpells.Q.IsInRange(target.Position)) DemSpells.Q.Cast();
+
+                        if (DemSpells.W.Cast(target))
+                        {
+                            Core.DelayAction(() => DemSpells.Q.Cast(), (int)delay);
+
+                        }
+                    }, 100);
+                }
             }
         }
 
@@ -160,13 +170,13 @@ namespace T7_Alistar
 
             var MaxRange = flash.Range + DemSpells.W.Range - 5;
 
-           /* switch(comb(misc, "INSECMODE"))
+            switch(comb(misc, "INSECMODE"))
             {
                 case 0:
                     if(flash.IsReady() && DemSpells.W.IsReady() && DemSpells.Q.IsReady() &&
                        myhero.CountEnemiesInRange(1500) >= slider(misc, "AOEMIN"))
                     {
-                        var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsEnemy && x.IsValidTarget(MaxRange));
+                        var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsEnemy && x.IsValidTarget(MaxRange - 20));
 
                         if(Enemies != null)
                         {
@@ -185,14 +195,14 @@ namespace T7_Alistar
                                 {
                                     if(Extensions.CountEnemiesInRange(enemy,180) > slider(misc, "AOEMIN"))
                                     {
-                                            WQinsec(enemy);
+                                        WQinsec(enemy);
                                     }
                                 }
                             }
                         }
                     }
                     break;
-                case 1:*/
+                case 1:
                     var ClosestTurret = EntityManager.Turrets.Allies.Where(x => x.Health > 50 && x.Distance(myhero.Position) < 1400).OrderBy(x => x.Distance(myhero.Position)).FirstOrDefault();
 
                     var ClosestEnemy = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.Health > 50 && x.IsValidTarget(flash.Range + 60)).OrderBy(x => x.Distance(myhero.Position)).FirstOrDefault();
@@ -211,9 +221,8 @@ namespace T7_Alistar
                             }
                          }
                     }
-                 //   break;
-                    
-            //}
+                    break;                   
+            }
         }
         #endregion Insec
 
@@ -294,6 +303,38 @@ namespace T7_Alistar
             }
         }
 
+        private static void Jungleclear()
+        {
+            var Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 850f);
+
+            if (Monsters != null)
+            {
+                if (check(jungleclear, "JWQ") && (DemSpells.W.IsLearned && DemSpells.W.IsReady()) && (DemSpells.Q.IsLearned && DemSpells.Q.IsReady()) &&
+                    myhero.Mana >= WQcost())
+                {
+                    foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.W.Range) && x.Health > 100))
+                    {
+                        var delay = Math.Max(0, monster.Distance(myhero.Position) - 365) / 1.2f - 25;
+                        if (Monsters.Where(x => !x.IsDead && x.Distance(monster.Position) < DemSpells.Q.Range).Count() >= slider(jungleclear, "JWQMIN"))
+                        {
+                        //    if (DemSpells.Q.IsInRange(monster.Position)) DemSpells.Q.Cast();
+
+                            if (DemSpells.W.Cast(monster))
+                            {
+                                Core.DelayAction(() => DemSpells.Q.Cast(), (int)delay);
+                            }
+                        }
+                    }
+                }
+
+                if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() &&
+                Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range)).Count() >= slider(jungleclear, "JQMIN"))
+                {
+                    DemSpells.Q.Cast();
+                }
+            }                       
+        }
+
         private static void Misc()
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
@@ -305,12 +346,25 @@ namespace T7_Alistar
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
+                var delay = Math.Max(0, target.Distance(myhero.Position) - 365) / 1.2f - 25;
 
                 if (check(misc, "KSQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady() && target.IsValidTarget(DemSpells.Q.Range) &&
                     QDamage(target) > target.Health && !target.HasUndyingBuff() && !target.IsZombie && !target.IsInvulnerable)
                 {
                     DemSpells.Q.Cast();
                 }
+
+               /* if (check(misc, "KSWQ") && (DemSpells.Q.IsLearned && DemSpells.W.IsLearned) && (DemSpells.Q.IsReady() && DemSpells.W.IsReady()) &&
+                    target.IsValidTarget(DemSpells.W.Range) && myhero.Mana >= WQcost() &&
+                    (QDamage(target) + WDamage(target)) > (target.Health + target.TotalMagicalDamage))
+                {
+                    if (DemSpells.Q.IsInRange(target.Position)) DemSpells.Q.Cast();
+
+                    if (DemSpells.W.Cast(target))
+                    {
+                        Core.DelayAction(() => DemSpells.Q.Cast(), (int)delay);
+                    }
+                }*/
 
                 if (check(misc, "autoign") && ignt.IsReady() && target.IsValidTarget(ignt.Range) &&
                     myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)
@@ -319,19 +373,20 @@ namespace T7_Alistar
                 }
             }
 
-            if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
-                    myhero.HealthPercent <= slider(misc, "POTMIN"))
+            if (check(misc, "AUTOPOT") && (!myhero.HasBuff("RegenerationPotion") || !myhero.HasBuff("ItemMiniRegenPotion")) &&
+                myhero.HealthPercent <= slider(misc, "POTMIN"))
             {
-                potion.Cast();
+                if (Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id)) potion.Cast();
+
+                else if (Item.HasItem(biscuit.Id) && Item.CanUseItem(biscuit.Id)) biscuit.Cast();
             }
 
-            if (key(misc, "EKEY") && DemSpells.E.IsLearned && DemSpells.E.IsReady() && myhero.ManaPercent >= slider(misc, "EMIN"))
+            if (key(misc, "EKEY") && DemSpells.E.IsLearned && DemSpells.E.IsReady() && myhero.ManaPercent >= slider(misc, "EMIN") && !myhero.IsRecalling())
             {
                 switch(comb(misc, "EMODE"))
                 {
                     case 0:
                         if (myhero.HealthPercent <= slider(misc, "ESELF")) DemSpells.E.Cast();
-                       //Chat.Print(myhero.HealthPercent + " " + slider(misc, "ESELF"));
                         break;
                     case 1:
                         if (allies.Where(x => x.HealthPercent <= slider(misc, "EALLY")).Count() > 0) DemSpells.E.Cast();
@@ -364,6 +419,8 @@ namespace T7_Alistar
         private static void OnDraw(EventArgs args)
         {
             if (myhero.IsDead) return;
+            
+            
 
             if (check(draw, "drawQ") && DemSpells.Q.Level > 0 && !myhero.IsDead && !check(draw, "nodraw"))
             {
@@ -422,7 +479,20 @@ namespace T7_Alistar
                                  key(misc, "INSECKEY") ? Color.Green : Color.Red,
                                  key(misc, "INSECKEY") ? "ON" : "OFF");
           
-            }         
+            }       
+  
+            if (check(draw, "DRAWINSEC"))
+            {
+                switch(comb(misc, "INSECMODE"))
+                {
+                    case 0:
+                        Circle.Draw(SharpDX.Color.Yellow, (flash.Range + DemSpells.W.Range - 5), myhero.Position);
+                        break;
+                    case 1:
+                        Circle.Draw(SharpDX.Color.Yellow, flash.Range, myhero.Position);
+                        break;
+                }
+            }
         }
 
         private static void OnGapcloser(Obj_AI_Base sender, Gapcloser.GapcloserEventArgs args)
@@ -485,7 +555,6 @@ namespace T7_Alistar
             var player = args.Target;
             int DamageDealt = (int)Math.Floor((args.Damage / player.MaxHealth) * 100);
 
-            Chat.Print(DamageDealt);
             if ((DamageDealt >= slider(misc, "RMIND") || player.HealthPercent < slider(misc, "RMINH")) && !player.IsDead && player.IsMe && player.IsAlly && player.NetworkId == myhero.NetworkId &&
                 myhero.CountEnemiesInRange(700) >= slider(misc, "RMINE"))
             {
@@ -499,11 +568,12 @@ namespace T7_Alistar
             combo = menu.AddSubMenu("Combo", "combo");
             harass = menu.AddSubMenu("Harass", "harass");
             laneclear = menu.AddSubMenu("Laneclear", "lclear");
+            jungleclear = menu.AddSubMenu("Jungleclear", "jclear");
             draw = menu.AddSubMenu("Drawings", "draw");
             misc = menu.AddSubMenu("Misc", "misc");           
 
             menu.AddGroupLabel("Welcome to T7 " + ChampionName + " And Thank You For Using!");
-            menu.AddLabel("Version 1.0 7/7/2016");
+            menu.AddLabel("Version 1.1 17/7/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -515,7 +585,6 @@ namespace T7_Alistar
             combo.Add("CW", new CheckBox("Use W", true));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
-            combo.Add("ITEMS", new CheckBox("Use Items", true));
 
             harass.AddLabel("Spells");
             harass.Add("HQ", new CheckBox("Use Q", true));
@@ -532,6 +601,15 @@ namespace T7_Alistar
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
+            jungleclear.AddGroupLabel("Spells");
+            jungleclear.Add("JQ", new CheckBox("Use Q", false));
+            jungleclear.Add("JQMIN", new Slider("Min Minions To Hit With Q", 2, 1, 4));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JWQ", new CheckBox("Use WQ Combo", true));
+            jungleclear.Add("JWQMIN", new Slider("Min Minions To Hit With WQ", 2, 1, 4));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 10, 0, 100));
+
             draw.Add("nodraw", new CheckBox("Disable All Drawings", false));
             draw.AddSeparator();
             draw.Add("drawQ", new CheckBox("Draw Q Range", true));
@@ -540,6 +618,7 @@ namespace T7_Alistar
             draw.AddSeparator();
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
             draw.Add("DRAWMODES", new CheckBox("Draw Status Of All Modes", true));
+            draw.Add("DRAWINSEC", new CheckBox("Draw Insec Ranges", true));
 
             misc.AddSeparator();
             misc.AddGroupLabel("Auto Healing(E)");
@@ -570,13 +649,14 @@ namespace T7_Alistar
             misc.AddSeparator();
             misc.AddGroupLabel("Insec");
             misc.Add("INSECKEY", new KeyBind("Insec Key", false, KeyBind.BindTypes.HoldActive, 'I'));
-          //  misc.Add("INSECMODE", new ComboBox("Insec Mode", 0, "Flash + WQ", "Flash + W"));
-           // misc.Add("AOEMIN", new Slider("Min Enemies To Hit With Flash + WQ", 2, 1, 5));
+            misc.Add("INSECMODE", new ComboBox("Insec Mode", 0, "Flash + WQ", "Flash + W"));
+            misc.Add("AOEMIN", new Slider("Min Enemies To Hit With Flash + WQ", 2, 1, 5));
             misc.AddSeparator();
             misc.AddLabel("_____________________________________________________________________________");
             misc.AddSeparator();
             misc.AddGroupLabel("Killsteal");
             misc.Add("KSQ", new CheckBox("Killsteal with Q", false));
+          //  misc.Add("KSWQ", new CheckBox("Killsteal with WQ Combo", false));
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));
             misc.AddSeparator();
             misc.AddGroupLabel("Anti-Gapcloser");
