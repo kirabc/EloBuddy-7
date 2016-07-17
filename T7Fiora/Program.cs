@@ -28,6 +28,7 @@ namespace T7_Fiora
         public static Item blade { get; private set; }
         public static Item yomus { get; private set; }
         public static Item potion { get; private set; }
+        public static Item biscuit { get; private set; }
 
         private static void OnLoad(EventArgs args)
         {
@@ -47,6 +48,7 @@ namespace T7_Fiora
             blade = new Item((int)ItemId.Blade_of_the_Ruined_King, 550);
             yomus = new Item((int)ItemId.Youmuus_Ghostblade);
             potion = new Item((int)ItemId.Health_Potion);
+            biscuit = new Item((int)ItemId.Total_Biscuit_of_Rejuvenation);
             Player.LevelSpell(SpellSlot.Q);
             SpellBlock.Initialize();
         }
@@ -62,6 +64,8 @@ namespace T7_Fiora
             if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > harass["HMIN"].Cast<Slider>().CurrentValue) Harass();
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > laneclear["LMIN"].Cast<Slider>().CurrentValue) Laneclear();
+
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > slider(jungleclear, "JMIN")) { Jungleclear(); }
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Flee)) Flee();
 
@@ -398,7 +402,7 @@ namespace T7_Fiora
             {
                 int count = Monsters.Where(x => x.IsValid() && !x.IsDead && x.Distance(myhero.Position) <= Player.Instance.GetAutoAttackRange()).Count();
 
-                if (count >= slider(laneclear, "JEMIN")) DemSpells.E.Cast(); 
+                if (count >= slider(jungleclear, "JEMIN")) DemSpells.E.Cast(); 
             }
 
             if (rhydra.IsOwned() && rhydra.IsReady())
@@ -433,10 +437,12 @@ namespace T7_Fiora
 
             if (check(misc, "skinhax")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
 
-            if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
-                    myhero.HealthPercent <= slider(misc, "POTMIN"))
+            if (check(misc, "AUTOPOT") && (!myhero.HasBuff("RegenerationPotion") || !myhero.HasBuff("ItemMiniRegenPotion")) &&
+                myhero.HealthPercent <= slider(misc, "POTMIN"))
             {
-                potion.Cast();
+                if (Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id)) potion.Cast();
+
+                else if (Item.HasItem(biscuit.Id) && Item.CanUseItem(biscuit.Id)) biscuit.Cast();
             }
 
             if (target != null)
