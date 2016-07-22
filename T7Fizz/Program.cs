@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
@@ -22,7 +22,12 @@ namespace T7_Fizz
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         static readonly string ChampionName = "Fizz";
         static readonly string Version = "1.0";
-        static readonly string Date = "21/7/16";
+        static readonly string Date = "22/7/16";
+
+        private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(9083, 4718), new Vector2(9030, 4508), 50);
+        private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint2 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(9024, 4536), new Vector2(9016, 4254), 50);
+        private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint3 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(5407, 11273), new Vector2(5577, 11141), 50);
+        private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint4 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(5727, 10890), new Vector2(5789, 10644), 60);
         public static Item potion { get; private set; }
         public static Item biscuit { get; private set; }
 
@@ -46,7 +51,7 @@ namespace T7_Fizz
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
-              
+
             var flags = Orbwalker.ActiveModesFlags;
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo)) { Combo(); }
@@ -63,13 +68,12 @@ namespace T7_Fizz
                 {
                     DemSpells.E.Cast(myhero.Position.Extend(Game.CursorPos, DemSpells.E.Range).To3D());
                     DemSpells.E.Cast(myhero.Position.Extend(Game.CursorPos, DemSpells.E.Range).To3D());
-                   // Core.DelayAction(() => DemSpells.E.Cast(myhero.Position.Extend(Game.CursorPos, DemSpells.E.Range).To3D()), 50);
                 }
             }
 
             Misc();
 
-       //     WallJump();           
+            WallJump();           
         }
 
         public static bool check(Menu submenu, string sig)
@@ -215,16 +219,6 @@ namespace T7_Fizz
                         switch (target.Distance(myhero.Position) < 400)
                         {
                             case true:
-                               /* if (DemSpells.E.Cast(target.Position))
-                                {
-                                    if (DemSpells.E.Cast(target.Position))
-                                    {
-                                        if (DemSpells.Q.Cast(target))
-                                        {
-                                            DemSpells.W.Cast();
-                                        }
-                                    }
-                                }*/
                                 CastE(target);
                                 if (DemSpells.Q.Cast(target))
                                 {
@@ -234,16 +228,6 @@ namespace T7_Fizz
                             case false:
                                 if (target.Distance(myhero.Position) > 400 && target.Distance(myhero.Position) < 799)
                                 {
-                                  /*  if (DemSpells.E.Cast(myhero.Position.Extend(target.Position, (target.Distance(myhero.Position) / 2)).To3D()))
-                                    {
-                                        if (DemSpells.E.Cast(target.Position))
-                                        {
-                                            if (DemSpells.Q.Cast(target))
-                                            {
-                                                DemSpells.W.Cast();
-                                            }
-                                        }
-                                    }*/
                                     CastE(target);
                                     if (DemSpells.Q.Cast(target))
                                     {
@@ -291,27 +275,6 @@ namespace T7_Fizz
                     {
                         MainCombo(target);
                     }
-                   /* if (ComboDamage(target) > target.Health)
-                    {
-                        var Rpred = DemSpells.R.GetPrediction(target);
-
-                        if (Rpred.HitChancePercent >= slider(pred, "Rpred") && !Rpred.Collision && DemSpells.R.Cast(Rpred.CastPosition))
-                        {
-                            MainCombo(target);
-                        }
-                    }
-                    else if (ComboDamage(target) < target.Health &&
-                            (ComboDamage(target) + myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health))
-                    {
-                        var Rpred = DemSpells.R.GetPrediction(target);
-
-                        if (Rpred.HitChancePercent >= slider(pred, "Rpred") && !Rpred.Collision && DemSpells.R.Cast(Rpred.CastPosition))
-                        {
-                            MainCombo(target);
-                        }
-                        if (check(combo, "CIGNT") && ignt.IsReady() && target.IsValidTarget(ignt.Range)) ignt.Cast(target);
-                    }
-                    return;*/
                 }
                 else
                 {
@@ -397,24 +360,6 @@ namespace T7_Fizz
 
                         if (check(combo, "CE") && DemSpells.E.IsReady() && target.IsValidTarget(-10 + DemSpells.E.Range * 2))
                         {
-                           /* switch(target.Distance(myhero.Position) < 400)
-                            {
-                                case true:
-                                    if (DemSpells.E.Cast(target.Position))
-                                    {
-                                        return;
-                                    }
-                                    break;
-                                case false:
-                                    if (DemSpells.E.Cast(myhero.Position.Extend(target.Position, target.Distance(myhero.Position) / 2).To3D()))
-                                    {
-                                        if (DemSpells.E.Cast(target.Position))
-                                        {
-                                            return;
-                                        }
-                                    }
-                                    break;
-                            }*/
                             CastE(target);
                         }
 
@@ -481,70 +426,6 @@ namespace T7_Fizz
                 {
                     CastE(target);
                 }
-               /* if (check(harass, "HEQ") && DemSpells.Q.IsReady() && DemSpells.E.IsReady()/* && target.IsValidTarget(-1 + DemSpells.E.Range * 2) &&
-                    GetManaCost('Q','E') <= myhero.Mana)
-                {
-                    if (target.IsValidTarget(DemSpells.Q.Range))
-                    {
-                        if (DemSpells.Q.Cast(target))
-                        {
-                            if (LastHarassPos == null)
-                            {
-                                LastHarassPos = myhero.ServerPosition;
-                            }
-
-                            if (JumpBack)
-                            {
-                                DemSpells.E.Cast((Vector3)LastHarassPos);
-                            }
-                        }
-                    } 
-                   /* switch(comb(harass, "HEQMODES"))
-                    {
-                        case 0:
-                            switch (pred.Distance(myhero.Position) <= 380)
-                            {
-                                case true:
-                                    if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), DemSpells.E.Range - 50).To3D()))
-                                    {
-                                        if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), pred.Distance(myhero.Position) + 20).To3D()))
-                                        {
-                                            DemSpells.Q.Cast(target);
-                                        }
-                                    }
-                                    break;
-                                case false:
-                                    if (pred.Distance(myhero.Position) <= 780)
-                                    {
-                                        if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), DemSpells.E.Range - 1).To3D()))
-                                        {
-                                            if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), DemSpells.E.Range - 1).To3D()))
-                                            {
-                                                DemSpells.Q.Cast(target);
-                                            }
-                                        }
-                                    }
-                                    break;
-                            } 
-                            break;
-                        case 1:
-                            if (target.IsValidTarget(DemSpells.Q.Range))
-                            {
-                                if (DemSpells.Q.Cast(target))
-                                {
-                                    if (LastHarassPos == null)
-                                    {
-                                        LastHarassPos = myhero.ServerPosition;
-                                    }
-
-                                    if (JumpBack)
-                                    {
-                                        DemSpells.E.Cast((Vector3)LastHarassPos);
-                                    }
-                                }
-                            }                            
-                            break;
-                    }  */ 
                 if (check(harass, "HW") && DemSpells.W.IsReady() && myhero.CountEnemiesInRange(DemSpells.W.Range) >= slider(harass, "HWMIN"))
                 {
                     DemSpells.W.Cast();
@@ -756,10 +637,7 @@ namespace T7_Fizz
             {
                 Core.DelayAction(() => BlockE(), 700);
             }
-          /*  if (unit.ChampionName.Equals("Blitzcrank") && args.Slot == SpellSlot.Q)
-            {
-                Core.DelayAction(() => BlockE(), 250);
-            }*/
+
             if (unit.ChampionName.Equals("Malphite") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
             {
                 Core.DelayAction(() => BlockE(),
@@ -920,62 +798,55 @@ namespace T7_Fizz
             }
         }
 
-     /*   private static void WallJump()
+        private static void WallJump()
         {
-            var DragonJumpPos = new Vector3(9355, 4500, -71);
+            if (!key(misc, "WALLJUMPKEY") || DemSpells.E.IsOnCooldown) return;
 
-            EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint1 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(9083, 4718), new Vector2(9030, 4508), 50);
+            var DragonJumpPos = new Vector3(9338, 4520, -71);
+            var BaronJumpPos = new Vector3(4966, 10429, -71);
+            
+            var ClosestPoint = new List<EloBuddy.SDK.Geometry.Polygon.Rectangle> { JumpingPoint, JumpingPoint2, JumpingPoint3, JumpingPoint4 }
+                                                                                 .OrderBy(x => x.CenterOfPolygon().Distance(myhero.Position))
+                                                                                 .FirstOrDefault();
 
-            var JumpingPoint = new Vector3(9002, 4404, 53);
-
-            if (DemSpells.E.IsReady() && key(misc, "WALLJUMPKEY") && DemSpells.E.IsInRange(JumpingPoint))
+            if (JumpingPoint.IsInside(myhero.Position) || JumpingPoint2.IsInside(myhero.Position))
             {
-                if (DemSpells.E.Cast(JumpingPoint))
-                {
-                    if(DemSpells.E.Cast(DragonJumpPos))
-                    {
-                        return;
-                    }
-                }
-              /*  if(DemSpells.E.Cast(JumpingPoint1.CenterOfPolygon().Extend(DragonJumpPos, 20).To3D()))
-                {
-                    DemSpells.E.Cast(JumpingPoint1.CenterOfPolygon().Extend(DragonJumpPos, (int)DemSpells.E.Range * 0.8f).To3D());
-                }
-                
-               /* switch(JumpingPoint1.IsInside(myhero.Position))
+                DemSpells.E.Cast(DragonJumpPos);   
+            }
+            else if (JumpingPoint3.IsInside(myhero.Position) || JumpingPoint4.IsInside(myhero.Position))
+            {
+                DemSpells.E.Cast(ClosestPoint.CenterOfPolygon().Extend(BaronJumpPos, DemSpells.E.Range - 1).To3D());
+            }
+            else if (check(misc, "WJMOVE") && ClosestPoint.CenterOfPolygon().Distance(myhero.Position) > ClosestPoint.Width + 25)
+            {
+                switch(ClosestPoint.CenterOfPolygon().Distance(myhero.Position) < 1000)
                 {
                     case true:
-                        DemSpells.E.Cast(JumpingPoint1.CenterOfPolygon().Extend(DragonJumpPos, 20).To3D());
-                        DemSpells.E.Cast(DragonJumpPos);
+                        if(ClosestPoint.CenterOfPolygon().Distance(BaronJumpPos) < 1500)
+                        {
+                            Orbwalker.MoveTo(ClosestPoint.CenterOfPolygon().Extend(BaronJumpPos, 30).To3D());
+                        }
+                        Orbwalker.MoveTo(ClosestPoint.CenterOfPolygon().To3D());
                         break;
                     case false:
-                        if (JumpingPoint1.IsOutside(myhero.Position.To2D()) && JumpingPoint1.CenterOfPolygon().Extend(DragonJumpPos, 20).Distance(myhero.Position) < 400)
-                        {
-                            DemSpells.E.Cast(JumpingPoint1.CenterOfPolygon().Extend(DragonJumpPos, 20).To3D());
-                            DemSpells.E.Cast(DragonJumpPos);
-                            if (DemSpells.E.Cast(JumpingPoint1.CenterOfPolygon().To3D()))
-                            {
-                                DemSpells.E.Cast(DragonJumpPos);
-                            }
-                        }                       
+                        Orbwalker.MoveTo(Game.CursorPos);
                         break;
                 }
-                
-            }
-         /*   else if (DemSpells.E.IsReady() && key(misc, "WALLJUMPKEY") &&  JumpingPoint1.CenterOfPolygon().Extend(DragonJumpPos, 20).Distance(myhero.Position) > 405)
-            {
-                Orbwalker.MoveTo(JumpingPoint1.CenterOfPolygon().To3D());
-            }
-            
-        }*/
+            }            
+        }
 
 
         private static void OnDraw(EventArgs args)
         {
             if (myhero.IsDead) return;
 
-          //  EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint1 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(9083, 4718), new Vector2(9030, 4508), 50);
-         //   Drawing.DrawCircle(JumpingPoint1.CenterOfPolygon().Extend(new Vector2(9342, 4552), 30).To3D(),20,Color.White);
+            if (check(draw, "DRAWWJ") && key(misc, "WALLJUMPKEY") && !check(draw, "nodraw"))
+            {
+                JumpingPoint.Draw(Color.Red);
+                JumpingPoint2.Draw(Color.Red);
+                JumpingPoint3.Draw(Color.Red);
+                JumpingPoint4.Draw(Color.Red);
+            }            
 
             if (check(draw, "drawQ") && DemSpells.Q.Level > 0 && !myhero.IsDead && !check(draw, "nodraw"))
             {
@@ -1051,12 +922,8 @@ namespace T7_Fizz
             combo.Add("CR", new CheckBox("Use R", true));
             combo.AddSeparator();
             combo.Add("CIGNT", new CheckBox("Use Ignite", false));
-       //     combo.Add("EGAP", new CheckBox("Use E To Gapclose if enemy out of range", true));
-
+            
             harass.AddLabel("Spells");
-      //      harass.Add("HEQ", new CheckBox("Use Q + E Combo", true));
-      //      harass.Add("HMODE", new ComboBox("Harass Mode", 0, "Use All Spells Separately", "Only Q + E Combo"));
-     //       harass.Add("HEQMODES", new ComboBox("Select EQ Combo", 1, "Attack With W + Q To Escape", "Attack With Q + W To Escape"));
             harass.Add("HQ", new CheckBox("Use W", true));
             harass.AddSeparator();
             harass.Add("HW", new CheckBox("Use W", true));
@@ -1099,6 +966,7 @@ namespace T7_Fizz
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
             draw.Add("drawkillable", new CheckBox("Draw Killable Enemies", true));
             draw.Add("EDRAWMODE", new ComboBox("E Drawing Mode", 0, "Single Jump Range", "Both Jumps Range"));
+            draw.Add("DRAWWJ", new CheckBox("Draw Jumping Positions If WallJump Active", true));
 
             blocking.Add("BLOCK", new CheckBox("Auto Block Spells With E", true));
             blocking.Add("evade", new CheckBox("Evade Integration", true));
@@ -1114,9 +982,10 @@ namespace T7_Fizz
             misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
             misc.Add("ksE", new CheckBox("Killsteal with E", false));
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", false));
-       //     misc.AddSeparator();
-       //     misc.AddLabel("WallJump");
-       //     misc.Add("WALLJUMPKEY", new KeyBind("WallJump Hotkey", false, KeyBind.BindTypes.HoldActive, 'T'));
+            misc.AddSeparator();
+            misc.AddLabel("WallJump");
+            misc.Add("WALLJUMPKEY", new KeyBind("WallJump Hotkey", false, KeyBind.BindTypes.HoldActive, 'T'));
+            misc.Add("WJMOVE", new CheckBox("Auto Move To Jumping Locations", true));
             misc.AddSeparator();
             misc.AddLabel("Auto Potion");
             misc.Add("AUTOPOT", new CheckBox("Activate Auto Potion", true));
