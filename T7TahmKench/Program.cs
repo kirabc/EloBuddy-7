@@ -55,11 +55,6 @@ namespace T7_TahmKench
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > laneclear["LMIN"].Cast<Slider>().CurrentValue) Laneclear();
 
             Misc();
-
-            if (ObjectManager.Get<Obj_AI_Minion>().Where(x => x.HasBuff("tahmkenchwhasdevouredtarget")).Any())
-            {
-                Chat.Print("true");
-            }
         }
 
         private static bool check(Menu submenu, string sig)
