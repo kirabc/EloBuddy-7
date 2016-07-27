@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,11 +18,11 @@ namespace T7_TahmKench
     {
         static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
-        private static Menu menu, combo, harass, laneclear, misc, draw, pred;
+        private static Menu menu, combo, harass, laneclear, misc, draw, pred, jungleclear;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         static readonly string ChampionName = "TahmKench";
-        static readonly string Version = "1.0";
-        static readonly string Date = "23/7/16";
+        static readonly string Version = "1.1";
+        static readonly string Date = "27/7/16";
         public static Item Potion { get; private set; }
         public static Item Biscuit { get; private set; }
         public static Item RPotion { get; private set; }
@@ -40,6 +40,7 @@ namespace T7_TahmKench
             RPotion = new Item((int)ItemId.Refillable_Potion);
             Player.LevelSpell(SpellSlot.Q);
             DatMenu();
+            
         }
 
         private static void OnTick(EventArgs args)
@@ -53,6 +54,8 @@ namespace T7_TahmKench
             if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > harass["HMIN"].Cast<Slider>().CurrentValue) Harass();
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > laneclear["LMIN"].Cast<Slider>().CurrentValue) Laneclear();
+
+            if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > jungleclear["JMIN"].Cast<Slider>().CurrentValue) Jungleclear();
 
             Misc();
         }
@@ -106,8 +109,8 @@ namespace T7_TahmKench
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
-
-            if (target != null && !target.IsInvulnerable)
+                      
+            if (target != null && !target.IsInvulnerable && check(combo, "FOCUS"))
             {                       
                 var Qpred = DemSpells.Q.GetPrediction(target);
 
@@ -135,6 +138,42 @@ namespace T7_TahmKench
                     DemSpells.W1.Cast(target);
                 }                
             }
+            else if (!check(combo, "FOCUS"))
+            {
+                var enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range)).OrderBy(x => x.Distance(myhero.Position));
+
+                if (enemies != null)
+                {
+                    foreach( var enemy in enemies)
+                    {
+                        var Qpred = DemSpells.Q.GetPrediction(enemy);
+
+                        if (check(combo, "CQ") && DemSpells.Q.CanCast(enemy))
+                        {
+                            switch (check(combo, "CQSTUN"))
+                            {
+                                case true:
+                                    if (enemy.GetStacks() >= 3 && !Qpred.Collision && Qpred.HitChancePercent >= slider(pred, "QPred"))
+                                    {
+                                        DemSpells.Q.Cast(Qpred.CastPosition);
+                                    }
+                                    break;
+                                case false:
+                                    if (!Qpred.Collision && Qpred.HitChancePercent >= slider(pred, "QPred"))
+                                    {
+                                        DemSpells.Q.Cast(Qpred.CastPosition);
+                                    }
+                                    break;
+                            }
+                        }
+
+                        if (check(combo, "CW") && check(combo, "CAUTOW") && !myhero.HasWBuff() && enemy.GetStacks() >= 3 && DemSpells.W1.CanCast(enemy))
+                        {
+                            DemSpells.W1.Cast(enemy);
+                        } 
+                    }
+                }
+            }                    
         }
 
         private static void Harass()
@@ -143,12 +182,20 @@ namespace T7_TahmKench
             var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, 900).ToList();
 
             if (target != null && !target.IsInvulnerable)
-            {
-                var Wpred = DemSpells.W2.GetPrediction(target);
-
-                if (check(harass, "HW") && myhero.HasWBuff() && target.IsValidTarget(DemSpells.W2.Range) && !Wpred.Collision)
+            {               
+                if (check(harass, "HW") && myhero.HasEatenMinion())
                 {
-                    DemSpells.W2.Cast(Wpred.CastPosition);
+                    switch (myhero.CountEnemiesInRange(DemSpells.W2.Range) >= 1)
+                    {
+                        case true:
+                            foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.W2.Range)))
+                            {
+                                DemSpells.W2.Cast(enemy.Position);
+                            }
+                            break;
+                        case false:
+                            break;
+                    }
                 }
 
                 if (check(harass, "HQ") && check(harass, "HW") && DemSpells.Q.IsReady() && (DemSpells.W1.IsReady() || DemSpells.W2.IsReady()) &&
@@ -174,6 +221,12 @@ namespace T7_TahmKench
                         }
                     }
                 }
+                else if (check(harass, "HQ") && DemSpells.Q.CanCast(target))
+                {
+                    var qpred = DemSpells.Q.GetPrediction(target);
+
+                    if (!qpred.Collision && qpred.HitChancePercent >= slider(pred, "QPred")) DemSpells.Q.Cast(qpred.CastPosition);
+                }
             }
         }
 
@@ -183,6 +236,20 @@ namespace T7_TahmKench
 
             if (minions != null)
             {
+                if (check(laneclear, "LW") && myhero.HasEatenMinion())
+                {
+                    switch(myhero.CountEnemyMinionsInRange(DemSpells.W2.Range) >= 1)
+                    {
+                        case true:
+                            foreach(var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.W2.Range) && x.Health > 20))
+                            {
+                                DemSpells.W2.Cast(minion.Position); 
+                            }
+                            break;
+                        case false:
+                            break;
+                    }
+                }
 
                 if (check(laneclear, "LQ") && DemSpells.Q.IsReady())
                 {
@@ -194,18 +261,52 @@ namespace T7_TahmKench
                 }
                 if (check(laneclear, "LW") && DemSpells.W1.IsReady())
                 {
-                    var CheckRange = myhero.HasWBuff() ? DemSpells.W2.Range : DemSpells.W1.Range;
-                    var targets = minions.Where(x => !x.IsDead && x.IsValidTarget(CheckRange) && x.Health > 30)
-                                         .OrderBy(x => x.Distance(myhero.Position))
-                                         .ToArray();
-                    if (targets.Length > 1)
+                    var targets = minions.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.W2.Range) && x.Health > 30)
+                                         .OrderBy(x => x.Distance(myhero.Position));
+
+                    if (targets.Count() >= 2 && DemSpells.W1.CanCast(targets.FirstOrDefault()))
                     {
-                        if (DemSpells.W1.CanCast(targets[0]) && !myhero.HasWBuff() && myhero.CountEnemyMinionsInRange(DemSpells.W2.Range) >= 1 &&
-                            DemSpells.W1.Cast(targets[0]))
-                        {
-                            DemSpells.W2.Cast(targets[1].Position);
-                        }
+                        DemSpells.W1.Cast(targets.FirstOrDefault());
+                    }  
+                }
+            }
+        }
+
+        private static void Jungleclear()
+        {
+            var monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, DemSpells.Q.Range);
+
+            if (monsters != null)
+            {
+                if (check(jungleclear, "JW") && myhero.HasEatenMinion())
+                {
+                    foreach (var monster in monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.W2.Range) && x.Health > 20))
+                    {
+                        var wpred = DemSpells.W2.GetPrediction(monster);
+                        DemSpells.W2.Cast(wpred.CastPosition);
                     }
+                }
+
+                if (check(jungleclear, "JQ") && DemSpells.Q.IsReady())
+                {
+                    foreach (var monster in monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 50))
+                    {
+                        var Qpred = DemSpells.Q.GetPrediction(monster);
+                        if (DemSpells.Q.CanCast(monster)) DemSpells.Q.Cast(Qpred.CastPosition);
+                    }
+                }
+
+                if (check(jungleclear, "JW") && DemSpells.W1.IsReady())
+                {
+                    var CheckRange = myhero.HasWBuff() ? DemSpells.W2.Range : DemSpells.W1.Range;
+
+                    var targets = monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.W2.Range) && x.Health > 30)
+                                         .OrderBy(x => x.Distance(myhero.Position));
+
+                    if (targets.Count() >= 2 && DemSpells.W1.CanCast(targets.FirstOrDefault()))
+                    {
+                        DemSpells.W1.Cast(targets.FirstOrDefault());
+                    }                                                         
                 }
             }
         }
@@ -313,6 +414,7 @@ namespace T7_TahmKench
             combo = menu.AddSubMenu("Combo", "combo");
             harass = menu.AddSubMenu("Harass", "harass");
             laneclear = menu.AddSubMenu("Laneclear", "lclear");
+            jungleclear = menu.AddSubMenu("Jungleclear", "jclear");
             draw = menu.AddSubMenu("Drawings", "draw");
             misc = menu.AddSubMenu("Misc", "misc");
             pred = menu.AddSubMenu("Prediction", "pred");
@@ -329,6 +431,9 @@ namespace T7_TahmKench
             combo.AddSeparator();
             combo.Add("CW", new CheckBox("Use W", true));
             combo.Add("CAUTOW", new CheckBox("Auto W on Target", false));
+            combo.AddSeparator();
+            combo.Add("FOCUS", new CheckBox("Focus Spells On Target", false));
+
 
             harass.AddLabel("Spells");
             harass.Add("HQ", new CheckBox("Use Q", true));
@@ -344,13 +449,19 @@ namespace T7_TahmKench
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
+            jungleclear.AddGroupLabel("Spells");
+            jungleclear.Add("JQ", new CheckBox("Use Q", true));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JW", new CheckBox("Use W", true));
+            jungleclear.AddSeparator();
+            jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 50, 0, 100));
+
             draw.Add("nodraw", new CheckBox("Disable All Drawings", false));
             draw.AddSeparator();
             draw.Add("drawQ", new CheckBox("Draw Q Range", true));
             draw.Add("drawW", new CheckBox("Draw W Range", true));
             draw.AddSeparator();
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
-            draw.Add("drawkillable", new CheckBox("Draw Killable Enemies", true));
 
             misc.AddLabel("Killsteal");
             misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
@@ -413,6 +524,11 @@ namespace T7_TahmKench
             { return target.GetBuffCount("tahmkenchpdebuffcounter"); }
 
             return 0;
+        }
+
+        public static bool HasEatenMinion(this AIHeroClient hero)
+        {
+            return ObjectManager.Get<Obj_AI_Minion>().Where(x => x.HasBuff("tahmkenchwhasdevouredtarget") && x.Distance(hero.Position) < 100).Count() >= 1 && hero.HasWBuff();
         }
     }
 }
