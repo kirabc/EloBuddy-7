@@ -21,6 +21,8 @@ namespace T7_Fiora
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         public static Menu menu, combo, harass, laneclear, misc, draw, pred, fleee, blocking, jungleclear;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
+        private static string Version = "1.3";
+        private static string Date = "27/7/16";
         public static Item tiamat { get; private set; }
         public static Item rhydra { get; private set; }
         public static Item thydra { get; private set; }
@@ -33,7 +35,7 @@ namespace T7_Fiora
         private static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != "Fiora") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#FF0505'> Fiora</font> : Loaded!(v1.2)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#FF0505'> Fiora</font> : Loaded!(v" + Version + ")");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -113,7 +115,7 @@ namespace T7_Fiora
 
                 if (DemSpells.E.IsLearned && DemSpells.E.IsReady())
                 {
-                    TotalDamage += (float)(myhero.GetAutoAttackDamage(target) + (new float[] { 0, 1.4f, 1.55f, 1.7f, 1.85f, 2 }[DemSpells.E.Level] * myhero.TotalAttackDamage));
+                    TotalDamage += (float)((myhero.GetAutoAttackDamage(target) * (int)slider(combo, "AAMIN")) + (new float[] { 0, 1.4f, 1.55f, 1.7f, 1.85f, 2 }[DemSpells.E.Level] * myhero.TotalAttackDamage));
                 }
 
                 if (DemSpells.R.IsLearned && DemSpells.R.IsReady())
@@ -576,6 +578,8 @@ namespace T7_Fiora
             if (args.End.Distance(Player.Instance) == 0)
                 return;
 
+            if (check(blocking, "RANGE") && unit.Distance(myhero.Position) > DemSpells.W.Range)
+                return;
   
 
             var castUnit = unit;
@@ -601,9 +605,44 @@ namespace T7_Fiora
                     ((int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
                     (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500) + 250);
             }
+            if (unit.ChampionName.Equals("Cassiopeia"))
+            {
+                switch(args.Slot)
+                {
+                    case SpellSlot.Q:
+                        if (Prediction.Position.PredictUnitPosition(myhero, 400).Distance(args.Target.Position) <= 75)
+                        {
+                            Core.DelayAction(() => CastW(castUnit), 300);
+                        }
+                        break;
+                    case SpellSlot.E:
+                        if (args.Target.IsMe)
+                        {
+                            Core.DelayAction(() => CastW(castUnit),
+                                ((int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
+                                (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500));
+                        }
+                        break;
+                    case SpellSlot.R:
+                        if (Prediction.Position.PredictUnitPosition(myhero, 500).Distance(args.Target.Position) <= 875 && PassiveManager.AngleBetween(myhero.Position.To2D(),unit.Position.To2D(),unit.Direction.To2D()) <= 85)
+                        {
+                            Core.DelayAction(() => CastW(castUnit), 500);
+                        }
+                        break;
+                }
+            }
+            if (unit.ChampionName.Equals("Blitzcrank") && args.Slot == SpellSlot.R && unit.Distance(myhero.Position) < 600)
+            {
+               // Core.DelayAction(() => CastW(castUnit), 100);
+                CastW(castUnit);
+            }
             if (unit.ChampionName.Equals("Darius") && args.Slot == SpellSlot.Q && unit.Distance(myhero.Position) < 420)
             {
                 Core.DelayAction(() => CastW(castUnit), 700);
+            }
+            if (unit.ChampionName.Equals("Jax") && args.Slot == SpellSlot.E && unit.Distance(myhero.Position) < 187.5f)
+            {
+                Core.DelayAction(() => CastW(castUnit), 1000);
             }
             if (unit.ChampionName.Equals("Malphite") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
             {
@@ -775,7 +814,7 @@ namespace T7_Fiora
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Fiora And Thank You For Using!");
-            menu.AddGroupLabel("Version 1.2 17/7/2016");
+            menu.AddGroupLabel("Version " + Version + " " + Date);
             menu.AddGroupLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -791,6 +830,7 @@ namespace T7_Fiora
             combo.Add("CRTURRET", new CheckBox("Dont Use R When Close To Enemy Turrets", false));
             combo.Add("CRMIN", new Slider("Min % Health To Use R", 35, 1, 99));
             combo.AddSeparator();
+            combo.Add("AAMIN", new Slider("Min Auto Attacks For Combo Damage Calculation", 2, 1, 30));
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
             combo.Add("ITEMS", new CheckBox("Use Items", true));
 
@@ -825,7 +865,7 @@ namespace T7_Fiora
             jungleclear.Add("JE", new CheckBox("Use E", false));
             jungleclear.Add("JEMIN", new Slider("Min Monsters To Cast W", 1, 1, 4));
             jungleclear.AddSeparator();
-            laneclear.Add("JHYDRA", new CheckBox("Use Hydra", true));
+            jungleclear.Add("JHYDRA", new CheckBox("Use Hydra", true));
             jungleclear.AddSeparator();
             jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 10, 0, 100));
 
@@ -855,7 +895,8 @@ namespace T7_Fiora
 
             blocking.Add("BLOCK", new CheckBox("Use W To Block Spells", true));        
             blocking.Add("evade", new CheckBox("Evade Integration", true));
-
+            blocking.AddSeparator();
+            blocking.Add("RANGE", new CheckBox("Only Block When Caster Is In W Range", false));
             blocking.AddSeparator();
 
             fleee.AddGroupLabel("Spells/Items To Use On Flee Mode");
