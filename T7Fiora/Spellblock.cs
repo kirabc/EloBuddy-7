@@ -46,7 +46,7 @@ namespace T7_Fiora
             BlockedSpells.Add("Azir", new List<BlockedSpell> { r });
             BlockedSpells.Add("Bard", new List<BlockedSpell> { r });
             BlockedSpells.Add(
-                "Blitzcrank", new List<BlockedSpell> { new BlockedSpell("PowerFistAttack", "Power Fist", true) });
+                "Blitzcrank", new List<BlockedSpell> { new BlockedSpell("PowerFistAttack", "Power Fist", true) , q , r });
             BlockedSpells.Add("Brand", new List<BlockedSpell> { e, r });
             BlockedSpells.Add(
                 "Braum", new List<BlockedSpell> { new BlockedSpell("BraumBasicAttackPassiveOverride", "Stun", true) });
@@ -58,6 +58,7 @@ namespace T7_Fiora
                     r 
                 });
             BlockedSpells.Add("Chogath", new List<BlockedSpell> { r });
+            BlockedSpells.Add("Cassiopeia", new List<BlockedSpell> { q, e, r });
             BlockedSpells.Add("Lux", new List<BlockedSpell> { q , r });
             BlockedSpells.Add("Ezreal", new List<BlockedSpell> { q, w, r });
             BlockedSpells.Add(
@@ -122,8 +123,9 @@ namespace T7_Fiora
                         BuffName = "JaxEmpowerTwo",
                         IsSelfBuff = true
                     },
-                    q
-                    //new BlockedSpell(SpellSlot.E) { BuffName = "JaxCounterStrike", IsSelfBuff = true }
+                    q,
+                    e
+                    
                 });
             BlockedSpells.Add(
                 "Jayce",
@@ -173,8 +175,8 @@ namespace T7_Fiora
                 new List<BlockedSpell> { new BlockedSpell("mordekaiserqattack2", "Empowered Q", true), r });
             BlockedSpells.Add("Morgana", new List<BlockedSpell> { q, r });
             BlockedSpells.Add("Nami", new List<BlockedSpell> { w });
-            BlockedSpells.Add(
-                "Nasus", new List<BlockedSpell> { new BlockedSpell("NasusQAttack", "Empowered Q", true), q });
+           // BlockedSpells.Add(
+           //     "Nasus", new List<BlockedSpell> { new BlockedSpell("NasusQAttack", "Empowered Q", true), q });
             BlockedSpells.Add(
                 "Nautilus",
                 new List<BlockedSpell> { new BlockedSpell("NautilusRavageStrikeAttack", "Empowered", true), e, r });
@@ -370,6 +372,9 @@ namespace T7_Fiora
                 if (spells == null || spells.Count == 0)
                     continue;
 
+                if (Program.check(Program.blocking, "RANGE") && skillshot.Unit.Distance(Player.Instance.Position) > DemSpells.W.Range)
+                    continue;
+
                 foreach (var spell in spells)
                 {
                     var item = Program.blocking[enemy.ChampionName + spell.MenuName];
@@ -382,8 +387,9 @@ namespace T7_Fiora
 
                     if (!spell.PassesBuffCondition(enemy) || !spell.PassesModelCondition(enemy))
                         continue;
+
                     if (!spell.PassesSpellCondition(skillshot.SpellData.SpellName))
-                        continue;
+                        continue;                    
 
                     if (Program.check(Program.blocking, "evade"))
                     {
