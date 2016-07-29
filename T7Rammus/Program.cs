@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Globalization;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Enumerations;
@@ -21,7 +22,7 @@ namespace T7_Rammus
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         static readonly string ChampionName = "Rammus";
         static readonly string Version = "1.0";
-        static readonly string Date = "28/7/16";
+        static readonly string Date = "30/7/16";
         public static Item Potion { get; private set; }
         public static Item Biscuit { get; private set; }
         public static Item RPotion { get; private set; }
@@ -57,9 +58,10 @@ namespace T7_Rammus
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Flee))
             {
-                if (DemSpells.Q.IsReady() && Player.Instance.Spellbook.GetSpell(SpellSlot.Q).SData.ManaCostArray[DemSpells.Q.Level] <= myhero.Mana)
+                if (DemSpells.Q.IsReady() && Player.Instance.Spellbook.GetSpell(SpellSlot.Q).SData.ManaCostArray[DemSpells.Q.Level] <= myhero.Mana && !QBuff())
                 {
                     DemSpells.Q.Cast();
+                    return;
                 }
             }
 
@@ -102,43 +104,51 @@ namespace T7_Rammus
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
         }
 
+        private static bool QBuff()
+        {
+            return myhero.HasBuff("PowerBall");
+        }
+
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
-                if (check(combo, "CQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1)
+                if (check(combo, "CQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1 && !QBuff())
                 {
                     DemSpells.Q.Cast();
                 }
-            }
 
-            if (check(combo, "CE") && DemSpells.E.IsReady())
-            {
-                switch (myhero.CountEnemiesInRange(DemSpells.E.Range) > 1)
+                if (check(combo, "CE") && DemSpells.E.IsReady() && !QBuff())
                 {
-                    case true:
-                        foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range)))
-                        {
-                            if (check(combo, "CE" + enemy.Name)) DemSpells.E.Cast(enemy);
-                        }
-                        break;
-                    case false:
-                        if (check(combo, "CE" + target.Name) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
-                        break;
+                    switch (myhero.CountEnemiesInRange(DemSpells.E.Range) > 1)
+                    {
+                        case true:
+                            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range)))
+                            {
+                                if (check(combo, "CE" + enemy.Name)) DemSpells.E.Cast(enemy);
+                            }
+                            break;
+                        case false:
+                            if (check(combo, "CE" + target.Name) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
+                            break;
+                    }
                 }
-            }
 
-            if (check(combo, "CR") && DemSpells.R.IsReady() && myhero.CountEnemiesInRange(DemSpells.R.Range) >= slider(combo, "CRMINE") && !myhero.IsFleeing)
-            {
-                DemSpells.R.Cast();
-            }
+                if (check(combo, "CR") && DemSpells.R.IsReady() && myhero.CountEnemiesInRange(DemSpells.R.Range) >= slider(combo, "CRMINE") &&
+                    DemSpells.R.Cast())
+                {
+                    return;
+                }
+            }            
         }
 
         private static void Harass()
         {
             var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
+
+            if (myhero.HasBuff("PowerBall"))
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
@@ -171,9 +181,9 @@ namespace T7_Rammus
 
             if (minions != null)
             {
-                if (check(laneclear, "LQAUTO") && myhero.HasBuff("") && minions.Any())
+                if (check(laneclear, "LQAUTO") && myhero.HasBuff("PowerBall") && minions.Any())
                 {
-                    foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(800)))
+                    foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(800)).OrderBy(x => x.CountAllyMinionsInRange(100)))
                     {
                         Orbwalker.DisableMovement = true;
                         Orbwalker.MoveTo(minion.Position);
@@ -217,7 +227,7 @@ namespace T7_Rammus
 
             if (Monsters != null)
             {
-                if (check(jungleclear, "JQAUTO") && myhero.HasBuff("") && Monsters.Any())
+                if (check(jungleclear, "JQAUTO") && myhero.HasBuff("PowerBall") && Monsters.Any())
                 {
                     foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(800)))
                     {
@@ -284,7 +294,7 @@ namespace T7_Rammus
 
             if (check(misc, "W") && DemSpells.W.IsReady())
             {
-                var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid() && x.Distance(myhero.Position) < x.GetAutoAttackRange());
+                var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid() && x.Distance(myhero.Position) < 700 && !x.IsFleeing && x.IsAttackingPlayer);
 
                 if (Enemies != null && Enemies.Count() >= slider(misc, "WMINE") && myhero.HealthPercent <= slider(misc, "WMINH"))
                 {
@@ -309,6 +319,15 @@ namespace T7_Rammus
                         break;
                 }
             }
+
+            if (check(draw, "DRAWTIME") && QBuff())
+            {               
+                var endTime = Math.Max(0, myhero.Buffs.Where(x => x.IsActive && x.Name.ToLower().Equals("powerball")).FirstOrDefault().EndTime - Game.Time);
+
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X,
+                                        Drawing.WorldToScreen(myhero.Position).Y - 30,
+                                        Color.Green, "Time: " + Convert.ToString(endTime, CultureInfo.InvariantCulture));              
+            }
         }
 
         public static void DatMenu()
@@ -320,7 +339,6 @@ namespace T7_Rammus
             jungleclear = menu.AddSubMenu("Jungleclear", "jclear");
             draw = menu.AddSubMenu("Drawings", "draw");
             misc = menu.AddSubMenu("Misc", "misc");
-            pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 " + ChampionName + " And Thank You For Using!");
             menu.AddLabel("Version " + Version + " " + Date);
@@ -341,7 +359,6 @@ namespace T7_Rammus
             combo.AddSeparator();
             combo.AddSeparator();                      
             combo.Add("CR", new CheckBox("Use R", true));
-            combo.AddLabel("If");
             combo.Add("CRMINE", new Slider("Min Enemies In Range", 2, 1, 5));
                       
             harass.AddLabel("Spells");
@@ -357,24 +374,26 @@ namespace T7_Rammus
             harass.Add("HMIN", new Slider("Min Mana % To Harass", 50, 0, 100));
 
             laneclear.AddGroupLabel("Spells");
-            laneclear.Add("LQ", new CheckBox("Use Q", true));
+            laneclear.Add("LQ", new CheckBox("Use Q", false));
             laneclear.Add("LQAUTO", new CheckBox("Auto Control Q", false));
             laneclear.AddSeparator();
-            laneclear.Add("LE", new CheckBox("Use E", true));
+            laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.Add("LEMODE", new ComboBox("E Mode", 0, "Big Minions", "All Minions"));
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
             jungleclear.AddGroupLabel("Spells");
-            jungleclear.Add("JQ", new CheckBox("Use Q", true));
+            jungleclear.Add("JQ", new CheckBox("Use Q", false));
             jungleclear.Add("JQAUTO", new CheckBox("Auto Control Q", false));
             jungleclear.AddSeparator();
-            jungleclear.Add("JE", new CheckBox("Use E", true));
+            jungleclear.Add("JE", new CheckBox("Use E", false));
             jungleclear.Add("JEMODE", new ComboBox("E Mode", 0, "Big Monsters", "All Monsters"));
             jungleclear.AddSeparator();
             jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 50, 0, 100));
 
             draw.Add("drawE", new CheckBox("Draw E Range", true));
+            draw.AddSeparator();
+            draw.Add("DRAWTIME", new CheckBox("Draw Remaining Q Time", true));
             draw.AddSeparator();
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
 
