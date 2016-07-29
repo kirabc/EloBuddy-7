@@ -22,7 +22,7 @@ namespace T7_Rammus
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         static readonly string ChampionName = "Rammus";
         static readonly string Version = "1.0";
-        static readonly string Date = "30/7/16";
+        static readonly string Date = "28/7/16";
         public static Item Potion { get; private set; }
         public static Item Biscuit { get; private set; }
         public static Item RPotion { get; private set; }
@@ -30,7 +30,7 @@ namespace T7_Rammus
         private static void OnLoad(EventArgs args)
         {
             if (Player.Instance.ChampionName != ChampionName) { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#FF0505'> " + ChampionName + "</font> : Loaded!(v" + Version + ")");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A39E12'> " + ChampionName + "</font> : Loaded!(v" + Version + ")");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;         
@@ -115,9 +115,11 @@ namespace T7_Rammus
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
+                Chat.Print(TargetSelector.GetPriority(target));
                 if (check(combo, "CQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1 && !QBuff())
                 {
                     DemSpells.Q.Cast();
+                    return;
                 }
 
                 if (check(combo, "CE") && DemSpells.E.IsReady() && !QBuff())
@@ -125,9 +127,10 @@ namespace T7_Rammus
                     switch (myhero.CountEnemiesInRange(DemSpells.E.Range) > 1)
                     {
                         case true:
-                            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range)))
+                            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range))
+                                                                                       .OrderByDescending(x => TargetSelector.GetPriority(x)))
                             {
-                                if (check(combo, "CE" + enemy.Name)) DemSpells.E.Cast(enemy);
+                                if (check(combo, "CE" + enemy.Name)) DemSpells.E.Cast(enemy);                              
                             }
                             break;
                         case false:
@@ -152,7 +155,7 @@ namespace T7_Rammus
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
-                if (check(harass, "HQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1)
+                if (check(harass, "HQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1 && !QBuff())
                 {
                     DemSpells.Q.Cast();
                 }
@@ -181,17 +184,8 @@ namespace T7_Rammus
 
             if (minions != null)
             {
-                if (check(laneclear, "LQAUTO") && myhero.HasBuff("PowerBall") && minions.Any())
-                {
-                    foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(800)).OrderBy(x => x.CountAllyMinionsInRange(100)))
-                    {
-                        Orbwalker.DisableMovement = true;
-                        Orbwalker.MoveTo(minion.Position);
-                        Orbwalker.DisableMovement = false;
-                    }
-                }
 
-                if (check(laneclear, "LQ") && DemSpells.Q.IsReady())
+                if (check(laneclear, "LQ") && DemSpells.Q.IsReady() && !QBuff())
                 {
                     foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(600) && x.Health > 50))
                     {
@@ -227,17 +221,8 @@ namespace T7_Rammus
 
             if (Monsters != null)
             {
-                if (check(jungleclear, "JQAUTO") && myhero.HasBuff("PowerBall") && Monsters.Any())
-                {
-                    foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(800)))
-                    {
-                        Orbwalker.DisableMovement = true;
-                        Orbwalker.MoveTo(monster.Position);
-                        Orbwalker.DisableMovement = false;
-                    }
-                }
 
-                if (check(jungleclear, "JQ") && DemSpells.Q.IsReady())
+                if (check(jungleclear, "JQ") && DemSpells.Q.IsReady() && !QBuff())
                 {
                     foreach(var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(600) && x.Health > 50))
                     {
@@ -247,7 +232,7 @@ namespace T7_Rammus
 
                 if (check(jungleclear, "JE") && DemSpells.E.IsReady())
                 {                   
-                    switch(comb(jungleclear, "EMODE"))
+                    switch(comb(jungleclear, "JEMODE"))
                     { 
                         case 0:
                             foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 50 &&
@@ -285,7 +270,7 @@ namespace T7_Rammus
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
-                if (check(misc, "autoign") && ignt.IsReady() && target.IsValidTarget(ignt.Range) &&
+                if (ignt != null && check(misc, "autoign") && ignt.IsReady() && target.IsValidTarget(ignt.Range) &&
                     myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)
                 {
                     ignt.Cast(target);
@@ -294,7 +279,7 @@ namespace T7_Rammus
 
             if (check(misc, "W") && DemSpells.W.IsReady())
             {
-                var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid() && x.Distance(myhero.Position) < 700 && !x.IsFleeing && x.IsAttackingPlayer);
+                var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid() && x.Distance(myhero.Position) < x.GetAutoAttackRange() && !x.IsFleeing);
 
                 if (Enemies != null && Enemies.Count() >= slider(misc, "WMINE") && myhero.HealthPercent <= slider(misc, "WMINH"))
                 {
@@ -362,7 +347,7 @@ namespace T7_Rammus
             combo.Add("CRMINE", new Slider("Min Enemies In Range", 2, 1, 5));
                       
             harass.AddLabel("Spells");
-            harass.Add("HQ", new CheckBox("Use Q", true));
+            harass.Add("HQ", new CheckBox("Use Q", false));
             harass.AddSeparator();
             harass.Add("HW", new CheckBox("Use E", true));
             harass.AddLabel("Use E On:");
@@ -375,7 +360,6 @@ namespace T7_Rammus
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q", false));
-            laneclear.Add("LQAUTO", new CheckBox("Auto Control Q", false));
             laneclear.AddSeparator();
             laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.Add("LEMODE", new ComboBox("E Mode", 0, "Big Minions", "All Minions"));
@@ -384,7 +368,6 @@ namespace T7_Rammus
 
             jungleclear.AddGroupLabel("Spells");
             jungleclear.Add("JQ", new CheckBox("Use Q", false));
-            jungleclear.Add("JQAUTO", new CheckBox("Auto Control Q", false));
             jungleclear.AddSeparator();
             jungleclear.Add("JE", new CheckBox("Use E", false));
             jungleclear.Add("JEMODE", new ComboBox("E Mode", 0, "Big Monsters", "All Monsters"));
@@ -418,7 +401,7 @@ namespace T7_Rammus
             misc.Add("autolevel", new CheckBox("Activate Auto Level Up Spells", true));
             misc.AddSeparator();
             misc.AddLabel("Skin Hack");
-            misc.Add("skinhax", new CheckBox("Activate Skin hack", true));
+            misc.Add("skinhax", new CheckBox("Activate Skin hack", false));
             misc.Add("skinID", new ComboBox("Skin Hack", 5, "Default", "King", "Chrome", "Molten", "Freljord", "Ninja", "Full Metal", "Guardian Of The Sands"));
         }
 
