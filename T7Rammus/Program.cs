@@ -22,7 +22,7 @@ namespace T7_Rammus
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         static readonly string ChampionName = "Rammus";
         static readonly string Version = "1.0";
-        static readonly string Date = "28/7/16";
+        static readonly string Date = "30/7/16";
         public static Item Potion { get; private set; }
         public static Item Biscuit { get; private set; }
         public static Item RPotion { get; private set; }
@@ -121,21 +121,13 @@ namespace T7_Rammus
                     return;
                 }
 
-                if (check(combo, "CE") && DemSpells.E.IsReady() && !QBuff())
-                {
-                    switch (myhero.CountEnemiesInRange(DemSpells.E.Range) > 1)
+                if (check(combo, "CE") && DemSpells.E.IsReady())
+                {                    
+                    foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range))
+                                                                      .OrderByDescending(x => TargetSelector.GetPriority(x)))
                     {
-                        case true:
-                            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range))
-                                                                                       .OrderByDescending(x => TargetSelector.GetPriority(x)))
-                            {
-                                if (check(combo, "CE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);                              
-                            }
-                            break;
-                        case false:
-                            if (check(combo, "CE" + target.ChampionName) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
-                            break;
-                    }
+                        if (check(combo, "CE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);                              
+                    }                          
                 }
 
                 if (check(combo, "CR") && DemSpells.R.IsReady() && myhero.CountEnemiesInRange(DemSpells.R.Range) >= slider(combo, "CRMINE") &&
