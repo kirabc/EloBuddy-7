@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
@@ -27,7 +27,7 @@ namespace MyTemplate
         private static void OnLoad(EventArgs args)
         {
             if ((Poro == null && PoroDash == null) || Game.MapId != GameMapId.HowlingAbyss) return;
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#FF0505'> " + ChampionName + "</font> : Loaded!(v" + Version + ")");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#FFFFFF'> " + ChampionName + "</font> : Loaded!(v" + Version + ")");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;   
             Game.OnTick += OnTick;
