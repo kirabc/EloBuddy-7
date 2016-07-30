@@ -115,7 +115,6 @@ namespace T7_Rammus
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
-                Chat.Print(TargetSelector.GetPriority(target));
                 if (check(combo, "CQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1 && !QBuff())
                 {
                     DemSpells.Q.Cast();
