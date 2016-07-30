@@ -129,11 +129,11 @@ namespace T7_Rammus
                             foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range))
                                                                                        .OrderByDescending(x => TargetSelector.GetPriority(x)))
                             {
-                                if (check(combo, "CE" + enemy.Name)) DemSpells.E.Cast(enemy);                              
+                                if (check(combo, "CE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);                              
                             }
                             break;
                         case false:
-                            if (check(combo, "CE" + target.Name) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
+                            if (check(combo, "CE" + target.ChampionName) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
                             break;
                     }
                 }
@@ -166,11 +166,11 @@ namespace T7_Rammus
                         case true:
                             foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range)))
                             {
-                                if (check(harass, "HE" + enemy.Name)) DemSpells.E.Cast(enemy);
+                                if (check(harass, "HE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);
                             }
                             break;
                         case false:
-                            if (check(harass, "HE" + target.Name) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
+                            if (check(harass, "HE" + target.ChampionName) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
                             break;
                     }
                 }
@@ -338,7 +338,7 @@ namespace T7_Rammus
             combo.AddLabel("Use E On:");
             foreach (AIHeroClient Enemy in EntityManager.Heroes.Enemies)
             {
-                combo.Add("CE" + Enemy.Name, new CheckBox(Enemy.Name, true));
+                combo.Add("CE" + Enemy.ChampionName, new CheckBox(Enemy.ChampionName, true));
             }
             combo.AddSeparator();
             combo.AddSeparator();                      
@@ -352,7 +352,7 @@ namespace T7_Rammus
             harass.AddLabel("Use E On:");
             foreach (AIHeroClient Enemy in EntityManager.Heroes.Enemies)
             {
-                harass.Add("HE" + Enemy.Name, new CheckBox(Enemy.Name, true));
+                harass.Add("HE" + Enemy.ChampionName, new CheckBox(Enemy.ChampionName, true));
             }
             harass.AddSeparator();
             harass.Add("HMIN", new Slider("Min Mana % To Harass", 50, 0, 100));
