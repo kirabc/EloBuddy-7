@@ -22,7 +22,7 @@ namespace T7_Rammus
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
         static readonly string ChampionName = "Rammus";
         static readonly string Version = "1.0";
-        static readonly string Date = "30/7/16";
+        static readonly string Date = "31/7/16";
         public static Item Potion { get; private set; }
         public static Item Biscuit { get; private set; }
         public static Item RPotion { get; private set; }
@@ -83,11 +83,6 @@ namespace T7_Rammus
             return submenu[sig].Cast<ComboBox>().CurrentValue;
         }
 
-        private static bool key(Menu submenu, string sig)
-        {
-            return submenu[sig].Cast<KeyBind>().CurrentValue;
-        }
-
         private static void OnLvlUp(Obj_AI_Base sender, Obj_AI_BaseLevelUpEventArgs args)
         {
             if (!sender.IsMe) return;
@@ -115,23 +110,27 @@ namespace T7_Rammus
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
-                if (check(combo, "CQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(700) >= 1 && !QBuff())
+                if (check(combo, "CQ") && DemSpells.Q.IsReady() && myhero.CountEnemiesInRange(1200) >= 1 && !QBuff())
                 {
                     DemSpells.Q.Cast();
                     return;
                 }
 
-                if (check(combo, "CE") && DemSpells.E.IsReady())
+                if (check(combo, "CE") && DemSpells.E.IsReady() && myhero.CountEnemiesInRange(DemSpells.E.Range) > 1)
                 {                    
                     foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range))
                                                                       .OrderByDescending(x => TargetSelector.GetPriority(x)))
                     {
-                        if (check(combo, "CE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);                              
+                        if (check(combo, "CE" + enemy.ChampionName))
+                        {
+                            DemSpells.E.Cast(enemy);
+                            return;
+                        }
                     }                          
                 }
 
                 if (check(combo, "CR") && DemSpells.R.IsReady() && myhero.CountEnemiesInRange(DemSpells.R.Range) >= slider(combo, "CRMINE") &&
-                    DemSpells.R.Cast())
+                   !myhero.IsFleeing && DemSpells.R.Cast())
                 {
                     return;
                 }
@@ -152,19 +151,11 @@ namespace T7_Rammus
                 }
 
                 if (check(harass, "HE") && DemSpells.E.IsReady())
-                {
-                    switch (myhero.CountEnemiesInRange(DemSpells.E.Range) > 1)
+                {                   
+                    foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range)))
                     {
-                        case true:
-                            foreach (AIHeroClient enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range)))
-                            {
-                                if (check(harass, "HE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);
-                            }
-                            break;
-                        case false:
-                            if (check(harass, "HE" + target.ChampionName) && DemSpells.E.CanCast(target)) DemSpells.E.Cast(target);
-                            break;
-                    }
+                        if (check(harass, "HE" + enemy.ChampionName)) DemSpells.E.Cast(enemy);
+                    }                                                    
                 }
             }
         }
@@ -244,20 +235,20 @@ namespace T7_Rammus
         }
 
         private static void Misc()
-        {
-            var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
-
-            if (check(misc, "skinhax")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
-
-            if (check(misc, "AUTOPOT") && (!myhero.HasBuff("RegenerationPotion") && !myhero.HasBuff("ItemMiniRegenPotion") && !myhero.HasBuff("ItemCrystalFlask")) &&
-                myhero.HealthPercent <= slider(misc, "POTMIN"))
+        {                
+            if (check(misc, "W") && DemSpells.W.IsReady())
             {
-                if (Item.HasItem(Potion.Id) && Item.CanUseItem(Potion.Id)) Potion.Cast();
+                if (check(misc, "WCOMBO") && !Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo)) return;
 
-                else if (Item.HasItem(Biscuit.Id) && Item.CanUseItem(Biscuit.Id)) Biscuit.Cast();
+                var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid() && x.Distance(myhero.Position) < 500 && !x.IsFleeing);
 
-                else if (Item.HasItem(RPotion.Id) && Item.CanUseItem(RPotion.Id)) RPotion.Cast();
-            }        
+                if (Enemies != null && Enemies.Count() >= slider(misc, "WMINE") && myhero.HealthPercent <= slider(misc, "WMINH"))
+                {
+                    DemSpells.W.Cast();
+                }
+            }
+
+            var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);  
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
@@ -268,15 +259,17 @@ namespace T7_Rammus
                 }
             }
 
-            if (check(misc, "W") && DemSpells.W.IsReady())
+            if (check(misc, "AUTOPOT") && (!myhero.HasBuff("RegenerationPotion") && !myhero.HasBuff("ItemMiniRegenPotion") && !myhero.HasBuff("ItemCrystalFlask")) &&
+                myhero.HealthPercent <= slider(misc, "POTMIN"))
             {
-                var Enemies = EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid() && x.Distance(myhero.Position) < x.GetAutoAttackRange() && !x.IsFleeing);
+                if (Item.HasItem(Potion.Id) && Item.CanUseItem(Potion.Id)) Potion.Cast();
 
-                if (Enemies != null && Enemies.Count() >= slider(misc, "WMINE") && myhero.HealthPercent <= slider(misc, "WMINH"))
-                {
-                    DemSpells.W.Cast();
-                }
+                else if (Item.HasItem(Biscuit.Id) && Item.CanUseItem(Biscuit.Id)) Biscuit.Cast();
+
+                else if (Item.HasItem(RPotion.Id) && Item.CanUseItem(RPotion.Id)) RPotion.Cast();
             }
+
+            if (check(misc, "skinhax")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
         }
 
         private static void OnDraw(EventArgs args)
@@ -372,7 +365,8 @@ namespace T7_Rammus
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
 
             misc.AddLabel("W Usage");
-            misc.Add("W", new CheckBox("Use W", true));
+            misc.Add("W", new CheckBox("Auto W", true));
+            misc.Add("WCOMBO", new CheckBox("Only Auto W In Combo Mode", false));
             misc.AddLabel("If");
             misc.Add("WMINE", new Slider("Min Enemies In Range", 2, 1, 5));
             misc.AddLabel("And");
