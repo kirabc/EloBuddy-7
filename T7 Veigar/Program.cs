@@ -22,7 +22,6 @@ namespace Veigarino
         public static Item Biscuit { get; private set; }
         public static void OnLoad(EventArgs arg)
         {
-            //   DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
             Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.7b)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
