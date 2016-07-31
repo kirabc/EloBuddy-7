@@ -19,6 +19,7 @@ namespace Veigarino
         private static Menu menu, combo, harass, laneclear, misc, draw, pred, sequence1, jungleclear;
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         public static Item potion { get; private set; }
+        public static Item Biscuit { get; private set; }
         public static void OnLoad(EventArgs arg)
         {
             //   DemSpells.Q.AllowedCollisionCount = 1;
@@ -32,6 +33,7 @@ namespace Veigarino
             Game.OnTick += OnTick;
             Player.LevelSpell(SpellSlot.Q);
             potion = new Item((int)ItemId.Health_Potion);
+            Biscuit = new Item((int)ItemId.Total_Biscuit_of_Rejuvenation);
         }
         private static void OnLvlUp(Obj_AI_Base guy, Obj_AI_BaseLevelUpEventArgs args)
         {
@@ -67,8 +69,8 @@ namespace Veigarino
             }
 
             if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > slider(jungleclear, "JMIN"))
-            { 
-                Jungleclear(); 
+            {
+                Jungleclear();
             }
 
             if (laneclear["Qlk"].Cast<KeyBind>().CurrentValue && slider(laneclear, "LcM") <= myhero.ManaPercent) QStack();
@@ -202,7 +204,7 @@ namespace Veigarino
                         DemSpells.Q.Cast(Qpred.CastPosition);
                     }
                 }
-                
+
                 if (check(combo, "useE") && DemSpells.E.IsReady() && target.IsValidTarget(DemSpells.E.Range - 30) && !target.IsZombie
                     && !target.IsInvulnerable)
                 {
@@ -349,7 +351,7 @@ namespace Veigarino
 
             if (Monsters != null)
             {
-                
+
                 if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
                 {
                     switch (comb(jungleclear, "JQMODE"))
@@ -380,7 +382,7 @@ namespace Veigarino
                     {
                         var pred = EntityManager.MinionsAndMonsters.GetCircularFarmLocation(mobs, DemSpells.W.Width, (int)DemSpells.W.Range);
 
-                        if (pred.HitNumber >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast(pred.CastPosition);                         
+                        if (pred.HitNumber >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast(pred.CastPosition);
                     }
                 }
 
@@ -405,10 +407,12 @@ namespace Veigarino
                 myhero.SetSkinId(comb(misc, "sID"));
             }
 
-            if (check(misc, "AUTOPOT") && Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id) && !myhero.HasBuff("RegenerationPotion") &&
+            if (check(misc, "AUTOPOT") && (!myhero.HasBuff("RegenerationPotion") || !myhero.HasBuff("ItemMiniRegenPotion")) &&
                 myhero.HealthPercent <= slider(misc, "POTMIN"))
             {
-                potion.Cast();
+                if (Item.HasItem(potion.Id) && Item.CanUseItem(potion.Id)) potion.Cast();
+
+                else if (Item.HasItem(Biscuit.Id) && Item.CanUseItem(Biscuit.Id)) Biscuit.Cast();
             }
 
             if (check(misc, "KSJ") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
@@ -487,6 +491,7 @@ namespace Veigarino
                 }
             }
         }
+
         private static void OnDraw(EventArgs args)
         {
             Circle.Draw(SharpDX.Color.Fuchsia, 375, myhero.Position);
@@ -563,6 +568,7 @@ namespace Veigarino
             }
 
         }
+
         private static void OnGapcloser(AIHeroClient sender, Gapcloser.GapcloserEventArgs e)
         {
             if (sender != null && sender.IsEnemy && DemSpells.E.IsInRange(sender.Position) && DemSpells.E.IsReady() &&
@@ -584,12 +590,13 @@ namespace Veigarino
                 }
             }
         }
+
         private static void DatMenu()
         {
 
             menu = MainMenu.AddMenu("T7 Veigar", "veigarxd");
             combo = menu.AddSubMenu("Combo", "combo");
-            harass = menu.AddSubMenu("Harass", "harass");        
+            harass = menu.AddSubMenu("Harass", "harass");
             laneclear = menu.AddSubMenu("Laneclear", "lclear");
             jungleclear = menu.AddSubMenu("Jungleclear", "jclear");
             draw = menu.AddSubMenu("Drawings", "draw");
