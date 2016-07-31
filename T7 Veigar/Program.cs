@@ -24,7 +24,7 @@ namespace Veigarino
         {
             //   DemSpells.Q.AllowedCollisionCount = 1;
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.7)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.7b)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -604,7 +604,7 @@ namespace Veigarino
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Veigar And Thank You For Using!");
-            menu.AddLabel("Version 1.7 15/7/2016");
+            menu.AddLabel("Version 1.7b 31/7/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
