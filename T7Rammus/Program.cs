@@ -166,32 +166,11 @@ namespace T7_Rammus
 
             if (minions != null)
             {
-
                 if (check(laneclear, "LQ") && DemSpells.Q.IsReady() && !QBuff())
                 {
                     foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(600) && x.Health > 50))
                     {
                         DemSpells.Q.Cast();
-                    }
-                }
-
-                if (check(laneclear, "LE") && DemSpells.E.IsReady())
-                {
-                    switch (comb(laneclear, "LEMODE"))
-                    {
-                        case 0:
-                            foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 50 &&
-                                                                       x.Name.ToLower().Contains("siege") && x.Name.ToLower().Contains("super")))
-                            {
-                                DemSpells.E.Cast(minion);
-                            }
-                            break;
-                        case 1:
-                            foreach (var minion in minions.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 50))
-                            {
-                                DemSpells.E.Cast(minion);
-                            }
-                            break;
                     }
                 }
             }
@@ -344,9 +323,6 @@ namespace T7_Rammus
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q", false));
-            laneclear.AddSeparator();
-            laneclear.Add("LE", new CheckBox("Use E", false));
-            laneclear.Add("LEMODE", new ComboBox("E Mode", 0, "Big Minions", "All Minions"));
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
