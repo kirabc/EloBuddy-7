@@ -23,7 +23,7 @@ namespace T7_KogMaw
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         private static Spell.Targeted smite = new Spell.Targeted(myhero.GetSpellSlotFromName("summonersmite"), 500);
         private static Vector3 DragonLocation, BaronLocation;
-        static readonly string ChampionName = "kogMaw";
+        static readonly string ChampionName = "KogMaw";
         static readonly string Version = "1.2";
         static readonly string Date = "31/7/16";
         public static Item cutl { get; private set; }
