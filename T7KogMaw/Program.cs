@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Enumerations;
@@ -18,19 +19,13 @@ namespace T7_KogMaw
     {
         static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
-        
         private static Menu menu, combo, harass, laneclear, misc, draw, pred, jungleclear;
-        
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         private static Spell.Targeted smite = new Spell.Targeted(myhero.GetSpellSlotFromName("summonersmite"), 500);
-        
-        public static int WRange = new[] { 0, 590, 620, 650, 680, 710 }[Player.Instance.Spellbook.GetSpell(SpellSlot.W).Level];
-        public static int RRange = new[] { 0, 1200, 1500, 1800 }[Player.Instance.Spellbook.GetSpell(SpellSlot.R).Level];
-        
-        static readonly string ChampionName = "KogMaw";
-        static readonly string Version = "1.1";
-        static readonly string Date = "24/7/16";
-        
+        private static Vector3 DragonLocation, BaronLocation;
+        static readonly string ChampionName = "kogMaw";
+        static readonly string Version = "1.2";
+        static readonly string Date = "31/7/16";
         public static Item cutl { get; private set; }
         public static Item blade { get; private set; }
         public static Item Potion { get; private set; }
@@ -46,6 +41,7 @@ namespace T7_KogMaw
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             Gapcloser.OnGapcloser += OnGapcloser;
+       //     Orbwalker.OnPreAttack += Orbwalker_OnPreAttack;
             Game.OnTick += OnTick; 
                     
             cutl = new Item((int)ItemId.Bilgewater_Cutlass, 550);
@@ -60,19 +56,25 @@ namespace T7_KogMaw
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
+
+            Misc();
             
             var flags = Orbwalker.ActiveModesFlags;
 
             if (flags.HasFlag(Orbwalker.ActiveModes.Combo)) Combo(); 
 
-            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > slider(harass, "HMIN")) Harass(); 
+            if (flags.HasFlag(Orbwalker.ActiveModes.Harass) && myhero.ManaPercent > slider(harass, "HMIN")) Harass();
+
+            if (key(harass, "AUTORKEY"))
+            {
+                AutoR();
+                Orbwalker.OrbwalkTo(Game.CursorPos);
+            }
 
             if (flags.HasFlag(Orbwalker.ActiveModes.LaneClear) && myhero.ManaPercent > slider(laneclear, "LMIN")) Laneclear(); 
 
             if (flags.HasFlag(Orbwalker.ActiveModes.JungleClear) && myhero.ManaPercent > slider(jungleclear, "JMIN")) Jungleclear(); 
-
-            Misc();
-
+            
             if (check(misc, "AUTOPASSIVE")) PassiveLogic();         
         }
 
@@ -91,6 +93,11 @@ namespace T7_KogMaw
             return submenu[sig].Cast<ComboBox>().CurrentValue;
         }
 
+        private static bool key(Menu submenu, string sig)
+        {
+            return submenu[sig].Cast<KeyBind>().CurrentValue;
+        }
+
         private static void OnLvlUp(Obj_AI_Base sender, Obj_AI_BaseLevelUpEventArgs args)
         {
             if (!sender.IsMe) return;
@@ -105,6 +112,8 @@ namespace T7_KogMaw
             SpellSlot[] sequence1 = { U, E, Q, W, W, R, W, E, W, E, R, E, E, Q, Q, R, Q, Q, U };
 
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
+
+            Game.OnTick += DemSpells.SetSpells;
         } 
 
         private static float ComboDamage(AIHeroClient target)
@@ -184,6 +193,7 @@ namespace T7_KogMaw
             }
 
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, RDamage);
+
         }
 
         private static float ReachTime(AIHeroClient target)
@@ -230,15 +240,14 @@ namespace T7_KogMaw
 
         private static void Combo()
         {
-            var target = TargetSelector.GetTarget(1900, DamageType.Physical, myhero.Position);
+            var target = TargetSelector.GetTarget(1900, DamageType.Mixed, myhero.Position);
 
             if (target != null && !target.IsInvulnerable)
             {          
+                
                 var qpred = DemSpells.Q.GetPrediction(target);
                 var epred = DemSpells.E.GetPrediction(target);
                 var rpred = DemSpells.R.GetPrediction(target);
-                
-                ItemManager(target);
 
                 if (check(combo, "CQ") && DemSpells.Q.CanCast(target) &&
                     qpred.HitChancePercent >= slider(pred, "QPred") && !qpred.Collision)
@@ -246,7 +255,7 @@ namespace T7_KogMaw
                     DemSpells.Q.Cast(qpred.CastPosition);
                 }
 
-                if (check(combo, "CW") && target.Distance(myhero.Position) < WRange)
+                if (check(combo, "CW") && target.Distance(myhero.Position) < DemSpells.W.Range)
                 {
                     DemSpells.W.Cast();
                 }
@@ -273,7 +282,9 @@ namespace T7_KogMaw
                             break;
                     }
                 }
-                
+
+                ItemManager(target);
+
                 if (check(combo, "Cignt") && ignt.CanCast(target))
                 {
                     if (target.Health > ComboDamage(target) && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health &&
@@ -292,7 +303,7 @@ namespace T7_KogMaw
 
         private static void Harass()
         {
-            var target = TargetSelector.GetTarget(1200, DamageType.Physical, Player.Instance.Position);
+            var target = TargetSelector.GetTarget(1200, DamageType.Magical, Player.Instance.Position);
 
             if (target != null && target.IsValidTarget() && !target.IsInvulnerable)
             {
@@ -306,7 +317,7 @@ namespace T7_KogMaw
                 }
 
                 if (check(harass, "HW") && DemSpells.W.IsLearned && DemSpells.W.IsReady() &&
-                    myhero.CountEnemiesInRange(WRange) >= slider(harass, "HWMIN"))
+                    myhero.CountEnemiesInRange(DemSpells.W.Range) >= slider(harass, "HWMIN"))
                 {
                     DemSpells.W.Cast();
                 }
@@ -321,7 +332,8 @@ namespace T7_KogMaw
 
         private static void Laneclear()
         {
-            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, WRange).ToArray();
+
+            var minions = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range).ToArray();
 
             if (minions != null)
             {
@@ -358,66 +370,100 @@ namespace T7_KogMaw
         {
             var Monsters = EntityManager.MinionsAndMonsters.GetJungleMonsters(myhero.Position, 1800f);
 
-            if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
+            if (Monsters != null)
             {
-                switch (comb(jungleclear, "JQMODE"))
+                if (check(jungleclear, "JQ") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
                 {
-                    case 0:
-                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30))
-                        {
-                            DemSpells.Q.Cast(monster.Position);
-                        }
-                        break;
-                    case 1:
-                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30 &&
-                                                                    !x.Name.ToLower().Contains("mini")))
-                        {
-                            var pred = DemSpells.Q.GetPrediction(monster);
-                            if (!pred.Collision) DemSpells.Q.Cast(pred.CastPosition);
-                        }
-                        break;
+                    switch (comb(jungleclear, "JQMODE"))
+                    {
+                        case 0:
+                            foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30))
+                            {
+                                DemSpells.Q.Cast(monster.Position);
+                            }
+                            break;
+                        case 1:
+                            foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.Q.Range) && x.Health > 30 &&
+                                                                        !x.Name.ToLower().Contains("mini")))
+                            {
+                                var pred = DemSpells.Q.GetPrediction(monster);
+                                if (!pred.Collision) DemSpells.Q.Cast(pred.CastPosition);
+                            }
+                            break;
+                    }
+                }
+
+                if (check(jungleclear, "JW") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
+                {
+                    int count = Monsters.Where(x => x.Distance(myhero.Position) < DemSpells.W.Range)
+                                        .Count();
+
+                    if (count >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast();
+                }
+
+                if (check(jungleclear, "JE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
+                {
+                    switch (comb(jungleclear, "JEMODE"))
+                    {
+                        case 0:
+                            foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30))
+                            {
+                                DemSpells.E.Cast(monster.Position);
+                            }
+                            break;
+                        case 1:
+                            foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30 &&
+                                                                        !x.Name.ToLower().Contains("mini")))
+                            {
+                                var pred = DemSpells.E.GetPrediction(monster);
+                                if (pred.HitChancePercent >= 80) DemSpells.E.Cast(pred.CastPosition);
+                            }
+                            break;
+                    }
+                }
+
+                if (check(jungleclear, "JR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
+                {
+                    if (myhero.HasBuff("kogmawlivingartillerycost") &&
+                        myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
+
+                    foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
+                                                                                                x.Health > 50 && x.IsValidTarget(DemSpells.R.Range) && RDamage(x) > x.Health))
+                    {
+                        var pred = DemSpells.R.GetPrediction(monster);
+                        if (pred.HitChancePercent >= 80) DemSpells.R.Cast(monster);
+                    }
+                }
+
+                if (check(jungleclear, "AUTOSMITE") && smite.Slot != SpellSlot.Unknown && smite.IsReady())
+                {
+                    var SmiteDamage = new int[] { 0, 390, 410, 430, 450,
+                                             480, 510, 540, 570, 600,
+                                             640, 680, 720, 760, 800,
+                                             850, 900, 950, 1000 }[Player.Instance.Level];
+
+                    foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
+                                                                                                x.Health > 50 && smite.CanCast(x) && SmiteDamage > x.Health))
+                    {
+                        smite.Cast(monster);
+                    }
                 }
             }
+        }
 
-            if (check(jungleclear, "JW") && DemSpells.W.IsLearned && DemSpells.W.IsReady())
+        private static void AutoR()
+        {
+            if (myhero.HasBuff("kogmawlivingartillerycost") && myhero.GetBuffCount("kogmawlivingartillerycost") >= slider(harass, "AUTORMAX")) return;
+
+            var target = TargetSelector.GetTarget(1900, DamageType.Magical, Player.Instance.Position);          
+
+            if (target != null)
             {
-                int count = Monsters.Where(x => x.Distance(myhero.Position) < WRange)
-                                    .Count();
+                var Rpred = DemSpells.R.GetPrediction(target);
 
-                if (count >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast();
-            }
-
-            if (check(jungleclear, "JE") && DemSpells.E.IsLearned && DemSpells.E.IsReady())
-            {
-                switch (comb(jungleclear, "JEMODE"))
+                if (DemSpells.R.CanCast(target) && Rpred.HitChancePercent >= slider(pred, "RPred"))
                 {
-                    case 0:
-                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30))
-                        {
-                            DemSpells.E.Cast(monster.Position);
-                        }
-                        break;
-                    case 1:
-                        foreach (var monster in Monsters.Where(x => !x.IsDead && x.IsValidTarget(DemSpells.E.Range) && x.Health > 30 &&
-                                                                    !x.Name.ToLower().Contains("mini")))
-                        {
-                            var pred = DemSpells.E.GetPrediction(monster);
-                            if (pred.HitChancePercent >= 80) DemSpells.E.Cast(pred.CastPosition);
-                        }
-                        break;
-                }
-            }
-
-            if (check(jungleclear, "JR") && DemSpells.R.IsLearned && DemSpells.R.IsReady())
-            {
-                if (myhero.HasBuff("kogmawlivingartillerycost") &&
-                    myhero.GetBuffCount("kogmawlivingartillerycost") == 3) return;
-
-                foreach (var monster in EntityManager.MinionsAndMonsters.GetJungleMonsters().Where(x => !x.Name.ToLower().Contains("mini") && !x.IsDead &&
-                                                                                            x.Health > 50 && x.IsValidTarget(DemSpells.R.Range) && RDamage(x) > x.Health))
-                {
-                    var pred = DemSpells.R.GetPrediction(monster);
-                    if (pred.HitChancePercent >= 80) DemSpells.R.Cast(monster);
+                    DemSpells.R.Cast(Rpred.CastPosition);
                 }
             }
         }
@@ -425,6 +471,9 @@ namespace T7_KogMaw
         private static void Misc()
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
+
+         //   DragonLocation = new Vector3(9866, 4414, -71);
+         //   BaronLocation = new Vector3(4930, 10371, -71);
 
             if (check(misc, "skinhax")) myhero.SetSkinId((int)misc["skinID"].Cast<ComboBox>().CurrentValue);
 
@@ -484,9 +533,9 @@ namespace T7_KogMaw
             {
 
                 if (check(draw, "drawonlyrdy"))
-                { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, WRange, myhero.Position); }
+                { Circle.Draw(DemSpells.W.IsOnCooldown ? SharpDX.Color.Transparent : SharpDX.Color.LimeGreen, DemSpells.W.Range, myhero.Position); }
 
-                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, WRange, myhero.Position); }
+                else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, DemSpells.W.Range, myhero.Position); }
 
             }
 
@@ -508,6 +557,18 @@ namespace T7_KogMaw
 
                 else if (!check(draw, "drawonlyrdy")) { Circle.Draw(SharpDX.Color.LimeGreen, new[] { 0, 1200, 1500, 1800 }[DemSpells.R.Level], myhero.Position); }
 
+            }
+
+            if (check(draw, "DRAWAUTO"))
+            {
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X - 50,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 10,
+                                 Color.White,
+                                 "        Auto R: ");
+                Drawing.DrawText(Drawing.WorldToScreen(myhero.Position).X + 37,
+                                 Drawing.WorldToScreen(myhero.Position).Y + 10,
+                                 key(harass, "AUTORKEY") ? Color.Green : Color.Red,
+                                 key(harass, "AUTORKEY") ? "ON" : "OFF");
             }
 
             foreach (var enemy in EntityManager.Heroes.Enemies)
@@ -536,7 +597,7 @@ namespace T7_KogMaw
                 var epred = DemSpells.E.GetPrediction(sender);
                 DemSpells.E.Cast(epred.CastPosition);
             }
-        }
+        } 
 
         public static void DatMenu()
         {
@@ -550,7 +611,7 @@ namespace T7_KogMaw
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 KogMaw And Thank You For Using!");
-            menu.AddLabel("Version 1.0 30/6/2016");
+            menu.AddLabel("Version " + Version + " " + Date);
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -562,38 +623,45 @@ namespace T7_KogMaw
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Use R", true));
             combo.Add("CRMIN", new ComboBox("Min Enemy Health To Cast R", 1, "100%", "50%", "25%"));
+          //  combo.Add("CRDELAY", new Slider("Extra Delay Between Ults(ms)", 200, 0, 4000));
             combo.Add("CRMAX", new Slider("Max R Stacks", 5, 1, 10));
             combo.AddSeparator();
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
             combo.Add("ITEMS", new CheckBox("Use Items", true));
 
             harass.AddLabel("Spells");
-            harass.Add("HQ", new CheckBox("Use Q", true));
+            harass.Add("HQ", new CheckBox("Use Q", false));
             harass.AddSeparator();
-            harass.Add("HW", new CheckBox("Use W", true));
+            harass.Add("HW", new CheckBox("Use W", false));
             harass.Add("HWMIN", new Slider("Min Enemies In Range To Cast E", 1, 1, 5));
             harass.AddSeparator();
-            harass.Add("HE", new CheckBox("Use E", true));
+            harass.Add("HE", new CheckBox("Use E", false));
             harass.Add("HEMIN", new Slider("Min Enemies To Hit With E", 2, 1, 5));
+            harass.AddSeparator();
+            harass.Add("AUTORKEY", new KeyBind("Auto Harass With R", false, KeyBind.BindTypes.HoldActive, 'G'));
+            harass.Add("AUTORMAX", new Slider("Max R Stacks", 3, 1, 10));
             harass.AddSeparator();
             harass.Add("HMIN", new Slider("Min Mana % To Harass", 50, 0, 100));
 
             laneclear.AddGroupLabel("Spells");
             laneclear.Add("LQ", new CheckBox("Use Q", false));
             laneclear.AddSeparator();
-            laneclear.Add("LW", new CheckBox("Use W", true));
+            laneclear.Add("LW", new CheckBox("Use W", false));
             laneclear.Add("LWMIN", new Slider("Min Minions Nearby To Cast E", 3, 1, 10));
             laneclear.AddSeparator();
             laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.Add("LEMIN", new Slider("Min Minions To Hit With E", 2, 1, 10));
             laneclear.AddSeparator();
+         //   laneclear.Add("LR", new CheckBox("Use R", false));
+         //   laneclear.Add("LRMIN", new Slider("Min Minions To Hit With R", 10, 4, 30));
+         //   laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
 
             jungleclear.AddGroupLabel("Spells");
             jungleclear.Add("JQ", new CheckBox("Use Q", false));
             jungleclear.Add("JQMODE", new ComboBox("Q Mode", 1, "All Monsters", "Big Monsters"));
             jungleclear.AddSeparator();
-            jungleclear.Add("JW", new CheckBox("Use W", true));
+            jungleclear.Add("JW", new CheckBox("Use W", false));
             jungleclear.Add("JWMIN", new Slider("Min Monsters To Cast W", 1, 1, 4));
             jungleclear.AddSeparator();
             jungleclear.Add("JE", new CheckBox("Use E", false));
@@ -601,6 +669,8 @@ namespace T7_KogMaw
             jungleclear.AddSeparator();
             jungleclear.Add("JR", new CheckBox("Use R To Finish Big Monsters", false));
             jungleclear.Add("JRSTACKS", new Slider("Max R Stacks", 3, 1, 10));
+            jungleclear.AddSeparator();
+            jungleclear.Add("AUTOSMITE", new CheckBox("Auto Smite Big Monsters", false));
             jungleclear.AddSeparator();
             jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 10, 0, 100));
 
@@ -613,11 +683,17 @@ namespace T7_KogMaw
             draw.AddSeparator();
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
             draw.Add("drawkillable", new CheckBox("Draw Killable Enemies", true));
+            draw.Add("DRAWAUTO", new CheckBox("Draw Auto R Mode Status", false));
 
+          //  misc.Add("HUMAN", new CheckBox("Humanized Mode", false));
+          //  misc.AddSeparator();
             misc.AddLabel("Killsteal");
             misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
             misc.Add("ksR", new CheckBox("Killsteal with R", true));
             misc.AddSeparator();
+         //   misc.Add("ksD", new CheckBox("Steal Dragon With R", true));
+        //    misc.Add("ksB", new CheckBox("Steal Baron/RiftHerald With R", true));
+        //    misc.AddSeparator();
             misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));
             misc.Add("AUTOPASSIVE", new CheckBox("Auto Control Passive", true));
             misc.Add("EGAP", new CheckBox("Use E On Gapcloser", false));
@@ -653,9 +729,16 @@ namespace T7_KogMaw
         static DemSpells()
         {
             Q = new Spell.Skillshot(SpellSlot.Q, 1175, SkillShotType.Linear, 250, 1650, 70);
-            W = new Spell.Active(SpellSlot.W, (uint)Program.WRange);
+            W = new Spell.Active(SpellSlot.W, 590);
             E = new Spell.Skillshot(SpellSlot.E, 1280, SkillShotType.Linear, 500, 1200, 120);
-            R = new Spell.Skillshot(SpellSlot.R, (uint)Program.RRange , SkillShotType.Circular, 1200, int.MaxValue, 240);
+            R = new Spell.Skillshot(SpellSlot.R, 1200, SkillShotType.Circular, 1200, int.MaxValue, 240);
+        }
+
+        public static void SetSpells(EventArgs args)
+        {
+            W = new Spell.Active(SpellSlot.W, (uint)(560 + (W.Level * 30)));
+            R = new Spell.Skillshot(SpellSlot.R, (uint)(900 + (R.Level * 300)), SkillShotType.Circular, 1200, int.MaxValue, 240);
+            Game.OnTick -= SetSpells; 
         }
     }
 }
