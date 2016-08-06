@@ -7,7 +7,6 @@ using EloBuddy.SDK.Events;
 using EloBuddy.SDK.Menu;
 using EloBuddy.SDK.Menu.Values;
 using EloBuddy.SDK.Rendering;
-using SharpDX;
 using Color = System.Drawing.Color;
 
 namespace Veigarino
@@ -17,13 +16,16 @@ namespace Veigarino
         private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu, combo, harass, laneclear, misc, draw, pred, sequence1, jungleclear;
+        private static Prediction.Position.PredictionData WData = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Circular, 900, 112, 0, 1250, int.MaxValue);
+        private static Prediction.Position.PredictionData EData = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Circular, 700, 385, 0, 500, int.MaxValue);
         public static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
         public static Item potion { get; private set; }
         public static Item Biscuit { get; private set; }
+        
         public static void OnLoad(EventArgs arg)
         {
             if (Player.Instance.ChampionName != "Veigar") { return; }
-            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.7b)");
+            Chat.Print("<font color='#0040FF'>T7</font><font color='#A901DB'> Veigar</font> : Loaded!(v1.8)");
             Chat.Print("<font color='#04B404'>By </font><font color='#FF0000'>T</font><font color='#FA5858'>o</font><font color='#FF0000'>y</font><font color='#FA5858'>o</font><font color='#FF0000'>t</font><font color='#FA5858'>a</font><font color='#0040FF'>7</font><font color='#FF0000'> <3 </font>");
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
@@ -34,14 +36,16 @@ namespace Veigarino
             potion = new Item((int)ItemId.Health_Potion);
             Biscuit = new Item((int)ItemId.Total_Biscuit_of_Rejuvenation);
         }
+        
         private static void OnLvlUp(Obj_AI_Base guy, Obj_AI_BaseLevelUpEventArgs args)
         {
             if (!guy.IsMe) return;
             /*Q>W>E*/
-            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.W, SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.W, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.E, SpellSlot.E };
+            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.E, SpellSlot.W, SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.W, SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.W, SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, SpellSlot.E, SpellSlot.E, SpellSlot.Unknown };
 
             if (misc["autoS"].Cast<CheckBox>().CurrentValue) Player.LevelSpell(sequence1[myhero.Level]);
         }
+        
         private static void OnTick(EventArgs args)
         {
             if (myhero.IsDead) return;
@@ -76,6 +80,7 @@ namespace Veigarino
 
             Misc();
         }
+        
         private static float ComboDMG(AIHeroClient target)
         {
             if (target != null)
@@ -90,18 +95,22 @@ namespace Veigarino
             }
             return 0;
         }
+        
         private static int comb(Menu submenu, string sig)
         {
             return submenu[sig].Cast<ComboBox>().CurrentValue;
         }
+        
         private static bool check(Menu submenu, string sig)
         {
             return submenu[sig].Cast<CheckBox>().CurrentValue;
         }
+        
         private static int slider(Menu submenu, string sig)
         {
             return submenu[sig].Cast<Slider>().CurrentValue;
         }
+        
         private static float QDamage(Obj_AI_Base target)
         {
             var index = DemSpells.Q.Level - 1;
@@ -111,6 +120,7 @@ namespace Veigarino
 
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)QDamage);
         }
+        
         private static float WDamage(AIHeroClient target)
         {
             var index = DemSpells.W.Level - 1;
@@ -119,6 +129,7 @@ namespace Veigarino
 
             return myhero.CalculateDamageOnUnit(target, DamageType.Magical, (float)WDamage);
         }
+        
         private static float WDamage(Obj_AI_Base monster)
         {
             var index = DemSpells.W.Level - 1;
@@ -127,6 +138,7 @@ namespace Veigarino
 
             return myhero.CalculateDamageOnUnit(monster, DamageType.Magical, (float)WDamage);
         }
+        
         private static float UltDamage(AIHeroClient target)
         {
             var level = DemSpells.R.Level;
@@ -184,6 +196,7 @@ namespace Veigarino
                 }
             }
         }
+        
         private static void Combo()
         {
             var target = TargetSelector.GetTarget(1000, DamageType.Magical, Player.Instance.Position);
@@ -228,12 +241,14 @@ namespace Veigarino
                             }
                             break;
                         case 2:
-                            if (myhero.CountEnemiesInRange(DemSpells.E.Range + (DemSpells.E.Radius / 2)) >= slider(combo, "CEAOE"))
+                            if (myhero.CountEnemiesInRange(DemSpells.E.Range) >= slider(combo, "CEAOE"))
                             {
-                                foreach (var enemy in EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid && !x.IsAlly &&
-                                                                                         x.Distance(myhero.Position) <= DemSpells.E.Range))
+
+                                var AoEPred = Prediction.Position.GetPredictionAoe(EntityManager.Heroes.Enemies.Where(x => !x.IsDead && x.IsValid && !x.IsAlly &&
+                                                                                         x.Distance(myhero.Position) <= DemSpells.E.Range).ToArray<Obj_AI_Base>(), EData);
+                                foreach (var Target in AoEPred)
                                 {
-                                    if (enemy.CountEnemiesInRange(175) >= slider(combo, "CEAOE")) DemSpells.E.Cast(enemy.Position);
+                                    if (Target.CollisionObjects.Where(x => x.IsEnemy).Count() >= slider(combo, "CEAOE")) DemSpells.E.Cast(Target.CastPosition);
                                 }
                             }
                             break;
@@ -281,6 +296,7 @@ namespace Veigarino
                     !misc["autoign"].Cast<CheckBox>().CurrentValue && !target.HasUndyingBuff()) ignt.Cast(target);
             }
         }
+        
         private static void QStack()
         {
             if (!DemSpells.Q.IsReady() || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo)) return;
@@ -325,9 +341,10 @@ namespace Veigarino
                 }
             }
         }
+        
         private static void Laneclear()
         {
-            var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.W.Range);
+            var minion = EntityManager.MinionsAndMonsters.GetLaneMinions(EntityManager.UnitTeam.Enemy, myhero.Position, DemSpells.Q.Range);
 
             if (check(laneclear, "LQ") && DemSpells.Q.IsReady() && !laneclear["Qlk"].Cast<KeyBind>().CurrentValue)
             {
@@ -338,9 +355,12 @@ namespace Veigarino
 
             if (check(laneclear, "LW") && minion != null && DemSpells.W.IsReady())
             {
-                var Wpred = EntityManager.MinionsAndMonsters.GetCircularFarmLocation(minion, DemSpells.W.Width, (int)DemSpells.W.Range);
+                var AoEPred = Prediction.Position.GetPredictionAoe(minion.ToArray<Obj_AI_Base>(), WData);
 
-                if (Wpred.HitNumber >= slider(laneclear, "Wmm")) DemSpells.W.Cast(Wpred.CastPosition);
+                foreach(var Target in AoEPred)
+                {
+                    if (Target.CollisionObjects.Where(x => x.IsMinion).Count() >= slider(laneclear, "Wmm")) DemSpells.W.Cast(Target.CastPosition);
+                }
             }
         }
 
@@ -379,9 +399,12 @@ namespace Veigarino
 
                     if (mobs != null && mobs.Count() >= slider(jungleclear, "JWMIN"))
                     {
-                        var pred = EntityManager.MinionsAndMonsters.GetCircularFarmLocation(mobs, DemSpells.W.Width, (int)DemSpells.W.Range);
+                        var AoEPred = Prediction.Position.GetPredictionAoe(mobs.ToArray<Obj_AI_Base>(),WData);
 
-                        if (pred.HitNumber >= slider(jungleclear, "JWMIN")) DemSpells.W.Cast(pred.CastPosition);
+                        foreach (var Target in AoEPred)
+                        {
+                            if (Target.CollisionObjects.Where(x => x.IsMinion).Count() >= slider(jungleclear, "JEMIN")) DemSpells.W.Cast(Target.CastPosition);
+                        }
                     }
                 }
 
@@ -603,7 +626,7 @@ namespace Veigarino
             pred = menu.AddSubMenu("Prediction", "pred");
 
             menu.AddGroupLabel("Welcome to T7 Veigar And Thank You For Using!");
-            menu.AddLabel("Version 1.7b 31/7/2016");
+            menu.AddLabel("Version 1.8 6/8/2016");
             menu.AddLabel("Author: Toyota7");
             menu.AddSeparator();
             menu.AddLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
@@ -722,7 +745,7 @@ namespace Veigarino
         static DemSpells()
         {
             Q = new Spell.Skillshot(SpellSlot.Q, 950, SkillShotType.Linear, 250, 2000, 70);
-            W = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Circular, 1350, 0, 112);
+            W = new Spell.Skillshot(SpellSlot.W, 900, SkillShotType.Circular, 1250, 0, 112);
             E = new Spell.Skillshot(SpellSlot.E, 700, SkillShotType.Circular, 500, 0, 375);
             R = new Spell.Targeted(SpellSlot.R, 650);
         }
