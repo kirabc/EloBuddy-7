@@ -740,7 +740,7 @@ namespace T7_Nidalee
             laneclear.Add("LQ2MIN", new Slider("Min Minions For Q", 1, 1, 4));
             laneclear.AddSeparator();
             laneclear.Add("LW2", new CheckBox("Use W", false));
-            laneclear.Add("LW2MIN", new Slider("Min Minions To Hit With W", 1, 1, 4));
+            laneclear.Add("LW2MIN", new Slider("Min Minions To Hit With W", 1, 1, 10));
             laneclear.AddSeparator();
             laneclear.Add("LE2", new CheckBox("Use E", false));
             laneclear.Add("LE2MODE", new ComboBox("Cougar E Mode", 0, "Big MInions", "All Minions"));
