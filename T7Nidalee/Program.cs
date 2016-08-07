@@ -781,10 +781,10 @@ namespace T7_Nidalee
             draw.Add("drawE", new CheckBox("Draw E Range"));
             draw.AddSeparator();
             draw.Add("drawonlyrdy", new CheckBox("Draw Only Ready Spells", false));
-            draw.Add("drawkillable", new CheckBox("Draw Killable Enemies"));
+            //draw.Add("drawkillable", new CheckBox("Draw Killable Enemies"));
             draw.Add("DRAWHEAL", new CheckBox("Draw Auto Healing Status"));
-            //   draw.AddSeparator();
-            //  draw.Add("DRAWMODE", new ComboBox("Which Spells To Draw?", 2, "Human Spells Only", "Cougar Spells Only", "Both Form Spells"));
+            //draw.AddSeparator();
+            //draw.Add("DRAWMODE", new ComboBox("Which Spells To Draw?", 2, "Human Spells Only", "Cougar Spells Only", "Both Form Spells"));
 
             misc.AddLabel("Auto Healing (E)");
             misc.Add("EKEY", new KeyBind("Auto Heal Hotkey", false, KeyBind.BindTypes.PressToggle, 'H'));
