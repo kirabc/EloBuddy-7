@@ -64,12 +64,14 @@ namespace T7_Alistar
         {
             if (!sender.IsMe) return;
 
+            var U = SpellSlot.Unknown;
+            var Q = SpellSlot.Q;
+            var W = SpellSlot.W;
+            var E = SpellSlot.E;
+            var R = SpellSlot.R;
+
             /*>>*/
-            SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.Unknown, SpellSlot.W, SpellSlot.E,
-                                        SpellSlot.Q, SpellSlot.Q, SpellSlot.R, SpellSlot.Q, 
-                                        SpellSlot.W, SpellSlot.Q, SpellSlot.W, SpellSlot.R, 
-                                        SpellSlot.W, SpellSlot.W, SpellSlot.E, SpellSlot.E, 
-                                        SpellSlot.R, SpellSlot.E, SpellSlot.E };
+            SpellSlot[] sequence1 = { U, W, E, Q, Q, R, Q, W, Q, W, R, W, W, E, E, R, E, E, U };
 
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
         }
