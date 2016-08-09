@@ -637,6 +637,10 @@ namespace T7_Fiora
                // Core.DelayAction(() => CastW(castUnit), 100);
                 CastW(castUnit);
             }
+            if (unit.ChampionName.Equals("Pantheon") && args.Slot == SpellSlot.W && args.Target.IsMe)
+            {
+                Core.DelayAction(() => CastW(castUnit), 50);
+            }
             if (unit.ChampionName.Equals("Darius") && args.Slot == SpellSlot.Q && unit.Distance(myhero.Position) < 420)
             {
                 Core.DelayAction(() => CastW(castUnit), 700);
