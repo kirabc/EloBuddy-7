@@ -388,7 +388,7 @@ namespace T7_Nidalee
                     }
                     if (!IsCougar())
                     {
-                        if (!Q1Ready && ((W2Ready && minions.Where(x => x.IsValidTarget(DemSpells.W2.Range)).Count() >= 1) ||
+                        if (DemSpells.Q1.IsOnCooldown && ((W2Ready && minions.Where(x => x.IsValidTarget(DemSpells.W2.Range)).Count() >= 1) ||
                                          (Q2Ready && minions.Where(x => x.IsValidTarget(DemSpells.Q2.Range)).Count() >= 1) ||
                                          (E2Ready && minions.Where(x => x.IsValidTarget(DemSpells.E2.Range)).Count() >= 1)))
                         {
@@ -459,7 +459,7 @@ namespace T7_Nidalee
                     }
                     if (!IsCougar())
                     {
-                        if (!Q1Ready && ((W2Ready && Monsters.Where(x => x.IsValidTarget(DemSpells.W2.Range)).Count() >= 1) ||
+                        if (DemSpells.Q1.IsOnCooldown && ((W2Ready && Monsters.Where(x => x.IsValidTarget(DemSpells.W2.Range)).Count() >= 1) ||
                                          (Q2Ready && Monsters.Where(x => x.IsValidTarget(DemSpells.Q2.Range)).Count() >= 1) || 
                                          (E2Ready && Monsters.Where(x => x.IsValidTarget(DemSpells.E2.Range)).Count() >= 1)) )
                         {
