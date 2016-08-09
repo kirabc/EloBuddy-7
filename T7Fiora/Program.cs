@@ -20,7 +20,7 @@ namespace T7_Fiora
         static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         public static Menu menu, combo, harass, laneclear, misc, draw, pred, fleee, blocking, jungleclear;
-        private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
+        public static Spell.Targeted ignt { get; private set; }
         private static string Version = "1.3";
         private static string Date = "27/7/16";
         public static Item tiamat { get; private set; }
@@ -51,6 +51,7 @@ namespace T7_Fiora
             yomus = new Item((int)ItemId.Youmuus_Ghostblade);
             potion = new Item((int)ItemId.Health_Potion);
             biscuit = new Item((int)ItemId.Total_Biscuit_of_Rejuvenation);
+            ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 600);
             Player.LevelSpell(SpellSlot.Q);
             SpellBlock.Initialize();
         }
