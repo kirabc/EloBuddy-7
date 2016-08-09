@@ -714,8 +714,6 @@ namespace T7_Nidalee
             combo.Add("CE2", new CheckBox("Use E"));
             combo.AddSeparator();
             combo.Add("CR", new CheckBox("Auto Switch Forms (R)"));
-            combo.AddSeparator();
-            combo.Add("Cignt", new CheckBox("Use Ignite", false));
 
             harass.AddLabel("Spells");
             harass.AddLabel("Human Form");
