@@ -21,8 +21,8 @@ namespace T7_Fiora
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         public static Menu menu, combo, harass, laneclear, misc, draw, pred, fleee, blocking, jungleclear;
         public static Spell.Targeted ignt { get; private set; }
-        private static string Version = "1.3";
-        private static string Date = "27/7/16";
+        private static string Version = "1.3b";
+        private static string Date = "13/8/16";
         public static Item tiamat { get; private set; }
         public static Item rhydra { get; private set; }
         public static Item thydra { get; private set; }
@@ -40,7 +40,7 @@ namespace T7_Fiora
             Drawing.OnDraw += OnDraw;
             Obj_AI_Base.OnLevelUp += OnLvlUp;
             Obj_AI_Base.OnProcessSpellCast += OnProcessSpellCast;
-           // Orbwalker.OnPostAttack += OnPostAttack;
+            // Orbwalker.OnPostAttack += OnPostAttack;
             DatMenu();
             Game.OnTick += OnTick;
             tiamat = new Item((int)ItemId.Tiamat_Melee_Only, 400);
@@ -96,9 +96,9 @@ namespace T7_Fiora
 
             /*Q>E>W*/
             SpellSlot[] sequence1 = { SpellSlot.Unknown, SpellSlot.W, SpellSlot.E, SpellSlot.Q,
-                                        SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E, 
-                                        SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E, 
-                                        SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R, 
+                                        SpellSlot.Q, SpellSlot.R, SpellSlot.Q, SpellSlot.E,
+                                        SpellSlot.Q, SpellSlot.E, SpellSlot.R, SpellSlot.E,
+                                        SpellSlot.E, SpellSlot.W, SpellSlot.W, SpellSlot.R,
                                         SpellSlot.W , SpellSlot.W,SpellSlot.Unknown };
 
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
@@ -195,7 +195,6 @@ namespace T7_Fiora
                     yomus.Cast();
                 }
             }
-
         }
 
         private static void Combo()
@@ -212,6 +211,8 @@ namespace T7_Fiora
 
                 if (check(combo, "CQ") && DemSpells.Q.IsReady() && DemSpells.Q.IsInRange(target.Position))
                 {
+                    if (target.IsUnderHisturret()) return;
+
                     switch (comb(pred, "QPREDMODE"))
                     {
                         case 0:
@@ -246,15 +247,16 @@ namespace T7_Fiora
                     myhero.HealthPercent >= slider(combo, "CRMIN") && ComboDamage(target) > target.Health)
                 {
                     if ((ComboDamage(target) - PassiveManager.GetPassiveDamage(target, 4) > target.Health) ||
-                       (ignt.IsReady() && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health)) return;
+                       (ignt.IsReady() && myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health))
+                        return;
 
-                    if(check(combo, "CRTURRET"))
+                    if (check(combo, "CRTURRET"))
                     {
                         var ClosestTurret = EntityManager.Turrets.Enemies.Where(x => x.IsTargetable).OrderBy(x => x.Distance(myhero.Position)).FirstOrDefault();
 
                         if (ClosestTurret.Distance(target.Position) > 900) DemSpells.R.Cast(target);
                     }
-                    else DemSpells.R.Cast(target); 
+                    else DemSpells.R.Cast(target);
 
                 }
 
@@ -377,7 +379,7 @@ namespace T7_Fiora
                 {
                     int count = minions.Where(x => x.IsValid() && !x.IsDead && x.Distance(myhero.Position) <= rhydra.Range).Count();
 
-                    if (count >= slider(laneclear, "HYDRAMIN")) rhydra.Cast();                                        
+                    if (count >= slider(laneclear, "HYDRAMIN")) rhydra.Cast();
                 }
             }
         }
@@ -405,7 +407,7 @@ namespace T7_Fiora
             {
                 int count = Monsters.Where(x => x.IsValid() && !x.IsDead && x.Distance(myhero.Position) <= Player.Instance.GetAutoAttackRange()).Count();
 
-                if (count >= slider(jungleclear, "JEMIN")) DemSpells.E.Cast(); 
+                if (count >= slider(jungleclear, "JEMIN")) DemSpells.E.Cast();
             }
 
             if (rhydra.IsOwned() && rhydra.IsReady())
@@ -420,7 +422,7 @@ namespace T7_Fiora
 
         private static void Flee()
         {
-            if (myhero.CountEnemiesInRange(1000) < slider(fleee, "FLEEMIN") && slider(fleee,"FLEEMIN") != 0) return;
+            if (myhero.CountEnemiesInRange(1000) < slider(fleee, "FLEEMIN") && slider(fleee, "FLEEMIN") != 0) return;
 
             if (check(fleee, "QFLEE") && DemSpells.Q.IsLearned && DemSpells.Q.IsReady())
             {
@@ -546,7 +548,7 @@ namespace T7_Fiora
         private static void OnProcessSpellCast(Obj_AI_Base sender, GameObjectProcessSpellCastEventArgs args)
         {
             var unit = sender as AIHeroClient;
-            
+
 
             /*
                 Credits => JokerArt
@@ -581,7 +583,7 @@ namespace T7_Fiora
 
             if (check(blocking, "RANGE") && unit.Distance(myhero.Position) > DemSpells.W.Range)
                 return;
-  
+
 
             var castUnit = unit;
             var type = args.SData.TargettingType;
@@ -608,7 +610,7 @@ namespace T7_Fiora
             }
             if (unit.ChampionName.Equals("Cassiopeia"))
             {
-                switch(args.Slot)
+                switch (args.Slot)
                 {
                     case SpellSlot.Q:
                         if (Prediction.Position.PredictUnitPosition(myhero, 400).Distance(args.Target.Position) <= 75)
@@ -625,16 +627,15 @@ namespace T7_Fiora
                         }
                         break;
                     case SpellSlot.R:
-                        if (Prediction.Position.PredictUnitPosition(myhero, 500).Distance(args.Target.Position) <= 875 && PassiveManager.AngleBetween(myhero.Position.To2D(),unit.Position.To2D(),unit.Direction.To2D()) <= 85)
+                        if (Prediction.Position.PredictUnitPosition(myhero, 500).Distance(args.Target.Position) <= 875 && PassiveManager.AngleBetween(myhero.Position.To2D(), unit.Position.To2D(), unit.Direction.To2D()) <= 85)
                         {
-                            Core.DelayAction(() => CastW(castUnit), 500);
+                            Core.DelayAction(() => CastW(castUnit), 400);
                         }
                         break;
                 }
             }
             if (unit.ChampionName.Equals("Blitzcrank") && args.Slot == SpellSlot.R && unit.Distance(myhero.Position) < 600)
             {
-               // Core.DelayAction(() => CastW(castUnit), 100);
                 CastW(castUnit);
             }
             if (unit.ChampionName.Equals("Pantheon") && args.Slot == SpellSlot.W && args.Target.IsMe)
@@ -645,9 +646,10 @@ namespace T7_Fiora
             {
                 Core.DelayAction(() => CastW(castUnit), 700);
             }
-            if (unit.ChampionName.Equals("Jax") && args.Slot == SpellSlot.E && unit.Distance(myhero.Position) < 187.5f)
+            if (unit.ChampionName.Equals("Jax") && args.Slot == SpellSlot.E && unit.Distance(myhero.Position) < 187.5f &&
+                Prediction.Position.PredictUnitPosition(myhero, 1000).Distance(unit.ServerPosition) < 187.5f)
             {
-                Core.DelayAction(() => CastW(castUnit), 1000);
+                Core.DelayAction(() => CastW(castUnit), 1100);
             }
             if (unit.ChampionName.Equals("Malphite") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
             {
@@ -655,13 +657,24 @@ namespace T7_Fiora
                     ((int)(args.Start.Distance(Player.Instance) / 700 * 1000) -
                     (int)(args.End.Distance(Player.Instance) / 700) - 500) + 100);
             }
-            if (unit.ChampionName.Equals("Morgana") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
+            if (unit.ChampionName.Equals("Morgana") && args.Slot == SpellSlot.R && unit.Distance(myhero.Position) < 1050 &&
+                Prediction.Position.PredictUnitPosition(myhero, 1000).Distance(unit.ServerPosition) < 1050)
             {
                 Core.DelayAction(() => CastW(castUnit), 3000);
             }
             if (unit.ChampionName.Equals("KogMaw") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 240)
             {
                 Core.DelayAction(() => CastW(castUnit), 1200);
+            }
+            if (unit.ChampionName.Equals("Taric") && args.Slot == SpellSlot.E && Prediction.Position.PredictUnitPosition(myhero,1000).Distance(unit.ServerPosition) < 575)
+            {
+                var loc = new EloBuddy.SDK.Geometry.Polygon.Rectangle(args.Start, args.End, 140);
+            
+                if (loc.IsInside(Prediction.Position.PredictUnitPosition(myhero, 1000)) ||
+                    loc.Points.Where(x => x.Distance(Prediction.Position.PredictUnitPosition(myhero, 1000)) < myhero.BoundingRadius).Any())
+                {
+                    Core.DelayAction(() => CastW(castUnit), 900);
+                }
             }
             if (unit.ChampionName.Equals("Ziggs") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 550)
             {
@@ -692,14 +705,14 @@ namespace T7_Fiora
             }
             if (unit.ChampionName.Equals("Zyra"))
             {
-                    Core.DelayAction(() => CastW(castUnit),
-                        (int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
-                        (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500);
+                Core.DelayAction(() => CastW(castUnit),
+                    (int)(args.Start.Distance(Player.Instance) / args.SData.MissileSpeed * 1000) -
+                    (int)(args.End.Distance(Player.Instance) / args.SData.MissileSpeed) - 500);
             }
             if (unit.ChampionName.Equals("Amumu") && args.Slot == SpellSlot.R && unit.Distance(myhero.Position) <= 550)
             {
                 CastW(castUnit);
-            } 
+            }
             if (args.End.Distance(Player.Instance) < 250)
             {
                 if (unit.ChampionName.Equals("Bard") && args.End.Distance(Player.Instance) < 300)
@@ -804,7 +817,7 @@ namespace T7_Fiora
 
             return DemSpells.W.Cast(castPos);
         }
-    
+
         public static void DatMenu()
         {
             menu = MainMenu.AddMenu("T7 Fiora", "fiora");
@@ -825,38 +838,38 @@ namespace T7_Fiora
             menu.AddGroupLabel("Please Report Any Bugs And If You Have Any Requests Feel Free To PM Me <3");
 
             combo.AddGroupLabel("Spells");
-            combo.Add("CQ", new CheckBox("Use Q", true));
-            //   combo.Add("CQGAP", new CheckBox("Use Q To Gapclose If Enemy Out Of Range", true));
-            combo.Add("CW", new CheckBox("Use W", true));
-            combo.Add("CE", new CheckBox("Use E", true));
-       //     combo.Add("CERESET", new CheckBox("Only Use E After AA(Reset AA)", true));
+            combo.Add("CQ", new CheckBox("Use Q"));
+            combo.Add("CQGAP", new CheckBox("Dont Use Q If Target Is Under Turret"));
+            combo.Add("CW", new CheckBox("Use W"));
+            combo.Add("CE", new CheckBox("Use E"));
+            //     combo.Add("CERESET", new CheckBox("Only Use E After AA(Reset AA)", true));
             combo.AddSeparator();
-            combo.Add("CR", new CheckBox("Use R", true));
+            combo.Add("CR", new CheckBox("Use R"));
             combo.Add("CRTURRET", new CheckBox("Dont Use R When Close To Enemy Turrets", false));
             combo.Add("CRMIN", new Slider("Min % Health To Use R", 35, 1, 99));
             combo.AddSeparator();
             combo.Add("AAMIN", new Slider("Min Auto Attacks For Combo Damage Calculation", 2, 1, 30));
             combo.Add("Cignt", new CheckBox("Use Ignite", false));
-            combo.Add("ITEMS", new CheckBox("Use Items", true));
+            combo.Add("ITEMS", new CheckBox("Use Items"));
 
             harass.AddGroupLabel("Spells");
-            harass.Add("HQ", new CheckBox("Use Q", true));
+            harass.Add("HQ", new CheckBox("Use Q", false));
             harass.Add("HQMAX", new Slider("Dont Use Q If More Than X Enemies Nearby", 1, 1, 5));
             harass.AddSeparator();
-            harass.Add("HW", new CheckBox("Use W", true));
+            harass.Add("HW", new CheckBox("Use W", false));
             harass.AddSeparator();
             harass.Add("HMIN", new Slider("Min Mana % To Harass", 50, 0, 100));
 
             laneclear.AddGroupLabel("Spells");
-            laneclear.Add("LQ", new CheckBox("Use Q", true));
+            laneclear.Add("LQ", new CheckBox("Use Q", false));
             laneclear.AddSeparator();
-            laneclear.Add("LW", new CheckBox("Use W", true));
+            laneclear.Add("LW", new CheckBox("Use W", false));
             laneclear.Add("LWMIN", new Slider("Min Minions To Hit With W", 2, 1, 6));
             laneclear.AddSeparator();
-            laneclear.Add("LE", new CheckBox("Use E", true));
+            laneclear.Add("LE", new CheckBox("Use E", false));
             laneclear.Add("LEMIN", new Slider("Min Minions To Hit With E", 2, 1, 10));
             laneclear.AddSeparator();
-            laneclear.Add("LHYDRA", new CheckBox("Use Hydra", true));
+            laneclear.Add("LHYDRA", new CheckBox("Use Hydra", false));
             laneclear.Add("HYDRAMIN", new Slider("Min Minions Nearby To Use Hydra", 5, 1, 20));
             laneclear.AddSeparator();
             laneclear.Add("LMIN", new Slider("Min Mana % To Laneclear", 50, 0, 100));
@@ -864,13 +877,13 @@ namespace T7_Fiora
             jungleclear.AddGroupLabel("Spells");
             jungleclear.Add("JQ", new CheckBox("Use Q", false));
             jungleclear.AddSeparator();
-            jungleclear.Add("JW", new CheckBox("Use W", true));
+            jungleclear.Add("JW", new CheckBox("Use W", false));
             jungleclear.Add("JWMIN", new Slider("Min Monsters To Hit With W", 1, 1, 4));
             jungleclear.AddSeparator();
             jungleclear.Add("JE", new CheckBox("Use E", false));
             jungleclear.Add("JEMIN", new Slider("Min Monsters To Cast W", 1, 1, 4));
             jungleclear.AddSeparator();
-            jungleclear.Add("JHYDRA", new CheckBox("Use Hydra", true));
+            jungleclear.Add("JHYDRA", new CheckBox("Use Hydra"));
             jungleclear.AddSeparator();
             jungleclear.Add("JMIN", new Slider("Min Mana % To Jungleclear", 10, 0, 100));
 
@@ -885,7 +898,7 @@ namespace T7_Fiora
             misc.AddGroupLabel("Killsteal");
             misc.Add("ksQ", new CheckBox("Killsteal with Q", false));
             misc.Add("ksW", new CheckBox("Killsteal with W", true));
-            misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));           
+            misc.Add("autoign", new CheckBox("Auto Ignite If Killable", true));
             misc.AddSeparator();
             misc.AddLabel("Auto Potion");
             misc.Add("AUTOPOT", new CheckBox("Activate Auto Potion", true));
@@ -898,7 +911,7 @@ namespace T7_Fiora
             misc.Add("skinhax", new CheckBox("Activate Skin hack", true));
             misc.Add("skinID", new ComboBox("Skin Hack", 3, "Default", "Royal Guard", "Nightraven", "Headmistress", "PROJECT:", "Pool Party"));
 
-            blocking.Add("BLOCK", new CheckBox("Use W To Block Spells", true));        
+            blocking.Add("BLOCK", new CheckBox("Use W To Block Spells", true));
             blocking.Add("evade", new CheckBox("Evade Integration", true));
             blocking.AddSeparator();
             blocking.Add("RANGE", new CheckBox("Only Block When Caster Is In W Range", false));
