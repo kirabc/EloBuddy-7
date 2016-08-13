@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using EloBuddy;
@@ -15,7 +15,7 @@ namespace ToxicBuddy
         private static void Main(string[] args) { Loading.OnLoadingComplete += OnLoad; }
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu;
-        private static bool MutedTeam = false;
+        private static bool MutedTeam = false, Disabled = false;
         static Dictionary<string, int> TeamToxicCount = new Dictionary<string, int>();
 
         public static void OnLoad(EventArgs args)
@@ -42,14 +42,19 @@ namespace ToxicBuddy
                 if (TeamToxicCount[ally.ChampionName] >= 10) Chat.Say("/mute " + ally.Name);               
             }
 
-            if (menu["MUTE"].Cast<KeyBind>().CurrentValue)
-            {
-                MuteAll();
-            }
+            if (menu["MUTE"].Cast<KeyBind>().CurrentValue) MuteAll();
+
+            if (menu["DISABLE"].Cast<CheckBox>().CurrentValue) Disabled = true;
         }
 
         private static void OnInput(ChatInputEventArgs args)
         {
+            if (Disabled == true)
+            {
+                Chat.Print("Your Chat Is Permanently Disabled!");
+                return;
+            }
+
             var msg = args.Input;
 
             if (WordList.Any(x => msg.ToLower().Contains(x)))
@@ -151,8 +156,12 @@ namespace ToxicBuddy
             menu.AddGroupLabel("Time For You To Become A Better Person :3");
             menu.AddSeparator();
             menu.Add("BLOCKTEAM", new CheckBox("Block Toxic Teammates"));
+            menu.AddSeparator();
             menu.Add("MUTE", new KeyBind("Mute Teammates Forever!!!!11",false, KeyBind.BindTypes.PressToggle, 'M'));
-            menu.AddLabel("Can Only Be Used Once ^^^");           
+            menu.AddLabel("Can Only Be Used Once ^^^");
+            menu.AddSeparator();
+            menu.Add("DISABLE", new CheckBox("Permanently Disable Chat",false));
+            menu.AddLabel("WARNING! CANNOT BE UNDONE ^^^");
         }
     }
 }
