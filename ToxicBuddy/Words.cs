@@ -42,6 +42,7 @@ namespace ToxicBuddy
             "sluts", "smegma", "smut", "snatch", "son-of-a-bitch", "spac", "spunk", "s_h_i_t", "t1tt1e5", "t1tties", "teets", "teez", "testical", "testicle",
             "tit", "titfuck", "tits", "titt", "tittie5", "tittiefucker", "titties", "tittyfuck", "tittywank", "titwank", "tosser", "turd", "tw4t", "twat",
             "twathead", "twatty", "twunt", "twunter", "v14gra", "v1gra", "vagina", "viagra", "vulva", "w00se", "wang", "wank", "wanker", "wanky", "whoar",
-            "whore", "willies", "willy", "xrated", "xxx", "scripter", "hacker", "haxor", "hacks", "hack", "scripts", "cheats", "gay", "gayboy" , "brainless" , "trash"};
+            "whore", "willies", "willy", "xrated", "xxx", "scripter", "hacker", "haxor", "hacks", "hack", "scripts", "cheats", "gay", "gayboy" , "brainless" ,
+            "braindead", "thrash", "garbage", "niqqa" , "niqqer" , "n1qqa", "n1qq4"};
     }
 }
