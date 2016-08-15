@@ -522,12 +522,6 @@ namespace T7_Anivia
             pred.AddGroupLabel("Prediction");
             pred.AddLabel("Q :");
             pred.Add("QPred", new Slider("Select % Hitchance", 90, 1, 100));
-            pred.AddSeparator();
-            pred.AddLabel("W :");
-            pred.Add("WPred", new Slider("Select % Hitchance", 90, 1, 100));
-            pred.AddSeparator();
-            pred.AddLabel("R :");
-            pred.Add("RPred", new Slider("Select % Hitchance", 90, 1, 100));
         }
         #endregion
 
