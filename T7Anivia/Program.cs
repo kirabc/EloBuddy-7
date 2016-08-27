@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using EloBuddy;
@@ -21,8 +21,8 @@ namespace T7_Anivia
         private static Menu menu, combo, harass, laneclear, jungleclear, misc, draw, pred;
         private static Spell.Targeted Ignite { get; set; }
         static readonly string ChampionName = "Anivia";
-        static readonly string Version = "1.0";
-        static readonly string Date = "15/8/16";
+        static readonly string Version = "1.0b";
+        static readonly string Date = "27/8/16";
 
         private static GameObject RMissile = null, QMissile = null;
 
@@ -43,10 +43,10 @@ namespace T7_Anivia
 
             GameObject.OnCreate += delegate (GameObject sender, EventArgs args2)
             {
-                if (!sender.IsValid) return;
+                if (!sender.IsValid || !sender.IsAlly) return;
 
                 if (sender.Name == "cryo_FlashFrost_Player_mis.troy")
-                {                    
+                {
                     QMissile = sender;
                 }
 
@@ -60,7 +60,7 @@ namespace T7_Anivia
 
             GameObject.OnDelete += delegate (GameObject sender, EventArgs args2)
             {
-                if (!sender.IsValid) return;
+                if (!sender.IsValid || !sender.IsAlly) return;
 
                 if (sender.Name == "cryo_FlashFrost_Player_mis.troy")
                 {
@@ -171,7 +171,7 @@ namespace T7_Anivia
         #region Modes
         private static void Combo()
         {
-            var Enemies = EntityManager.Heroes.Enemies.Where(x => x.ValidTarget(DamageType.Magical, (int)DemSpells.Q.Range));
+            var Enemies = EntityManager.Heroes.Enemies.Where(x => x.IsValidTarget(DemSpells.Q.Range) && !x.HasUndyingBuff());
             var target = TargetSelector.GetTarget(1200, DamageType.Magical, myhero.Position);
 
             if (QMissile != null && (QMissile.Distance(target.Position) < 200 || EntityManager.Heroes.Enemies.Where(x => x.Distance(QMissile.Position) < 200).Count() >= 1) &&
@@ -199,19 +199,8 @@ namespace T7_Anivia
                 return;
             }
 
-            if (check(combo, "CW") && DemSpells.W.IsReady() && target.ValidTarget(DamageType.Magical, (int)DemSpells.W.Range - 50))
-            {
-                if (target.IsFleeing)
-                {
-                    DemSpells.W.Cast(myhero.Position.Extend(target.Position, (int)target.Distance(myhero.Position) + 40).To3D());
-                    return;
-                }
-                else
-                {
-                    DemSpells.W.Cast(myhero.Position.Extend(target.Position, (int)target.Distance(myhero.Position) - 40).To3D());
-                    return;
-                }
-            }
+            if (check(combo, "CW") && DemSpells.W.GetPrediction(target).CastPosition.Distance(target.Position) >= 100 && DemSpells.W.Cast(DemSpells.W.GetPrediction(target).CastPosition))
+            { return; }
 
             if (check(combo, "CE") && DemSpells.E.IsReady())
             {
@@ -254,7 +243,7 @@ namespace T7_Anivia
                     DemSpells.Q.Cast(myhero.Position))
             { return; }
 
-            if (Enemies == null) return;            
+            if (Enemies == null) return;
 
             if (check(harass, "HQ") && DemSpells.Q.IsReady() && QMissile == null)
             {
@@ -417,7 +406,7 @@ namespace T7_Anivia
                 return;
             }
 
-            if (target != null && target.ValidTarget(DamageType.Magical , 1000))
+            if (target != null && target.ValidTarget(DamageType.Magical, 1000))
             {
                 if (check(misc, "KSE") && DemSpells.E.CanCast(target) && EDamage(target) > Prediction.Health.GetPrediction(target, DemSpells.E.CastDelay) &&
                     Prediction.Health.GetPrediction(target, DemSpells.E.CastDelay) > 0 && !target.HasBuff("bansheesveil") && DemSpells.E.Cast(target))
@@ -463,7 +452,7 @@ namespace T7_Anivia
             harass.AddSeparator();
             harass.Add("HE", new CheckBox("Use E", false));
             harass.AddLabel("Use E On:");
-            foreach(var enemy in EntityManager.Heroes.Enemies)
+            foreach (var enemy in EntityManager.Heroes.Enemies)
             {
                 harass.Add("HE" + enemy.ChampionName, new CheckBox(enemy.ChampionName));
             }
@@ -530,7 +519,7 @@ namespace T7_Anivia
         {
             return target.HasBuff("chilled");
         }
-      
+
         private static float EDamage(AIHeroClient target)
         {
             int index = DemSpells.E.Level - 1;
@@ -554,11 +543,6 @@ namespace T7_Anivia
         private static int comb(Menu submenu, string sig)
         {
             return submenu[sig].Cast<ComboBox>().CurrentValue;
-        }
-
-        private static bool key(Menu submenu, string sig)
-        {
-            return submenu[sig].Cast<KeyBind>().CurrentValue;
         }
         #endregion
     }
@@ -586,7 +570,7 @@ namespace T7_Anivia
     }
 
     public static class MyExtensions
-    {       
+    {
         public static bool ValidTarget(this AIHeroClient hero, DamageType type, int range)
         {
             return !hero.HasBuff("UndyingRage") && !hero.HasBuff("JudicatorIntervention") && !hero.HasBuff("ChronoShift") && !hero.HasBuff("kindredrnodeathbuff") &&
