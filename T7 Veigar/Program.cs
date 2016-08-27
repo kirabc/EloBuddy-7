@@ -18,8 +18,8 @@ namespace T7_Veigar
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         private static Menu menu, combo, harass, laneclear, misc, draw, pred, sequence1, jungleclear;
 
-        private static Prediction.Position.PredictionData WData = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Circular, 900, 112, 0, 1250, int.MaxValue);
-        private static Prediction.Position.PredictionData EData = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Circular, 700, 385, 0, 500, int.MaxValue);
+        private static Prediction.Position.PredictionData WData = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Circular, 900, 112, 0, 1250, int.MaxValue, int.MaxValue, myhero.Position);
+        private static Prediction.Position.PredictionData EData = new Prediction.Position.PredictionData(Prediction.Position.PredictionData.PredictionType.Circular, 700, 385, 0, 500, int.MaxValue, int.MaxValue, myhero.Position);
 
         static readonly string ChampionName = "Veigar";
         static readonly string Version = "1.9";
