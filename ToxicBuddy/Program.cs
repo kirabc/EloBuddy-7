@@ -52,6 +52,7 @@ namespace ToxicBuddy
             if (Disabled == true)
             {
                 Chat.Print("Your Chat Is Permanently Disabled!");
+                args.Process = false;
                 return;
             }
 
