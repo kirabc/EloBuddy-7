@@ -20,14 +20,36 @@ namespace T7_Fizz
         public static AIHeroClient myhero { get { return ObjectManager.Player; } }
         public static Menu menu, combo, harass, laneclear, misc, draw, pred, blocking, jungleclear, flee;
         private static Spell.Targeted ignt = new Spell.Targeted(myhero.GetSpellSlotFromName("summonerdot"), 550);
+
         static readonly string ChampionName = "Fizz";
-        static readonly string Version = "1.0";
-        static readonly string Date = "22/7/16";
+        static readonly string Version = "1.1";
+        static readonly string Date = "3/9/16";
 
         private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(9083, 4718), new Vector2(9030, 4508), 50);
         private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint2 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(9024, 4536), new Vector2(9016, 4254), 50);
         private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint3 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(5407, 11273), new Vector2(5577, 11141), 50);
         private static EloBuddy.SDK.Geometry.Polygon.Rectangle JumpingPoint4 = new EloBuddy.SDK.Geometry.Polygon.Rectangle(new Vector2(5727, 10890), new Vector2(5789, 10644), 60);
+
+        private static Prediction.Manager.PredictionInput RDATA = new Prediction.Manager.PredictionInput
+        {
+            Delay = DemSpells.R.CastDelay,
+            Radius = DemSpells.R.Radius,
+            Range = DemSpells.R.Range,
+            Speed = DemSpells.R.Speed,
+            Type = EloBuddy.SDK.Enumerations.SkillShotType.Linear,
+            CollisionTypes = { EloBuddy.SDK.Spells.CollisionType.AiHeroClient,
+                               EloBuddy.SDK.Spells.CollisionType.YasuoWall}
+        };
+
+        private static Prediction.Manager.PredictionInput EDATA = new Prediction.Manager.PredictionInput
+        {
+            Delay = DemSpells.E.CastDelay,
+            Radius = DemSpells.E.Radius,
+            Range = DemSpells.E.Range,
+            Speed = DemSpells.E.Speed,
+            Type = EloBuddy.SDK.Enumerations.SkillShotType.Circular
+        };
+
         public static Item potion { get; private set; }
         public static Item biscuit { get; private set; }
 
@@ -45,7 +67,7 @@ namespace T7_Fizz
             Player.LevelSpell(SpellSlot.E);
             DatMenu();
             SpellBlock.Initialize();
-            DemSpells.R.AllowedCollisionCount = 0;
+            CheckPrediction();
         }
 
         private static void OnTick(EventArgs args)
@@ -68,6 +90,7 @@ namespace T7_Fizz
                 {
                     DemSpells.E.Cast(myhero.Position.Extend(Game.CursorPos, DemSpells.E.Range).To3D());
                     DemSpells.E.Cast(myhero.Position.Extend(Game.CursorPos, DemSpells.E.Range).To3D());
+                   // Core.DelayAction(() => DemSpells.E.Cast(myhero.Position.Extend(Game.CursorPos, DemSpells.E.Range).To3D()), 50);
                 }
             }
 
@@ -110,6 +133,23 @@ namespace T7_Fizz
             SpellSlot[] sequence1 = { U, W, Q, E, E, R, E, W, E, W, R, W, W, Q, Q, R, Q, Q, U};
 
             if (check(misc, "autolevel")) Player.LevelSpell(sequence1[myhero.Level]);
+        }
+
+        private static void CheckPrediction()
+        {
+
+            string CorrectPrediction = "SDK Beta Prediction";
+
+            if (Prediction.Manager.PredictionSelected == CorrectPrediction)
+            {
+                return;
+            }
+            else
+            {
+                Prediction.Manager.PredictionSelected = CorrectPrediction;
+                Chat.Print("<font color='#00D118'>T7 Fizz: Prediction Has Been Automatically Changed!</font>");
+                return;
+            }
         }
 
         private static float ComboDamage(AIHeroClient Nigga)
@@ -193,6 +233,104 @@ namespace T7_Fizz
 
         private static void MainCombo(AIHeroClient target)
         {
+            RDATA.Target = target;
+
+            var Predict = Prediction.Manager.GetPrediction(RDATA);
+
+            switch(DemSpells.Q.IsInRange(target))
+            {
+                case true:
+                    QRCombo(target);
+                    break;
+                case false:
+                    if (Predict.HitChancePercent >= slider(pred, "Rpred") &&
+                        Predict.CollisionObjects.Where(x => x is AIHeroClient || x.Name.ToLower().Contains("yasuo")).Count() == 0 &&
+                        DemSpells.R.Cast(Predict.CastPosition))
+                    {
+                        QWECombo(target);
+                    }                
+                    break;
+            }
+        }
+
+        private static void QRCombo(AIHeroClient target)
+        {
+            RDATA.Target = target;
+
+            var Rpred = Prediction.Manager.GetPrediction(RDATA);
+
+            switch (DemSpells.Q.IsInRange(target.Position))
+            {
+                case true:
+                    if (Rpred.CollisionObjects.Where(x => x is AIHeroClient || x.Name.ToLower().Contains("yasuo")).Count() == 0 && DemSpells.Q.Cast(target))
+                    {
+                        if (DemSpells.R.Cast(target.Position))
+                        {
+                            if (DemSpells.E.IsInRange(target.Position))
+                            {
+                                if (DemSpells.E.Cast(target.Position))
+                                {
+                                    DemSpells.W.Cast();
+                                }
+                            }
+                            else if (target.Distance(myhero.Position) > 399 && target.Distance(myhero.Position) < 799)
+                            {
+                                DemSpells.E.Cast(myhero.Position.Extend(target.Position, (target.Distance(myhero.Position) / 2)).To3D());
+                                DemSpells.E.Cast(target.Position);
+                                DemSpells.W.Cast();
+                            }
+                        }
+                    }
+                    break;
+                case false:
+                    if (Rpred.HitChancePercent >= slider(pred, "Rpred") &&
+                        Rpred.CollisionObjects.Where(x => x is AIHeroClient || x.Name.ToLower().Contains("yasuo")).Count() == 0 &&
+                        DemSpells.R.Cast(Rpred.CastPosition))
+                    {
+                        if (target.Distance(myhero.Position) < (DemSpells.E.Range * 2) + 148 + DemSpells.Q.Range)
+                        {
+                            switch (target.Distance(myhero.Position) < 400)
+                            {
+                                case true:
+                                    CastE(target);
+                                    if (DemSpells.Q.Cast(target))
+                                    {
+                                        DemSpells.W.Cast();
+                                    }
+                                    break;
+                                case false:
+                                    if (target.Distance(myhero.Position) > 400 && target.Distance(myhero.Position) < 799)
+                                    {
+                                        CastE(target);
+                                        if (DemSpells.Q.Cast(target))
+                                        {
+                                            DemSpells.W.Cast();
+                                        }
+                                    }
+                                    else if ((target.Distance(myhero.Position) > 799 && target.Distance(myhero.Position) < 799 + 150) ||
+                                             (target.Distance(myhero.Position) > (-1 + DemSpells.E.Range * 2) + 260 && target.Distance(myhero.Position) < ((-1 + DemSpells.E.Range * 2) + DemSpells.Q.Range - 1)))
+                                    {
+                                        if (DemSpells.E.Cast(myhero.Position.Extend(target.Position, DemSpells.E.Range).To3D()))
+                                        {
+                                            if (DemSpells.E.Cast(myhero.Position.Extend(target.Position, DemSpells.E.Range).To3D()))
+                                            {
+                                                if (DemSpells.Q.Cast(target))
+                                                {
+                                                    DemSpells.W.Cast();
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+
+        private static void QWECombo(AIHeroClient target)
+        {
             switch (DemSpells.Q.IsInRange(target.Position))
             {
                 case true:
@@ -205,11 +343,11 @@ namespace T7_Fizz
                                 DemSpells.W.Cast();
                             }
                         }
-                        else if (target.Distance(myhero.Position) > 399 && target.Distance(myhero.Position) < 799)
+                        else if (target.Distance(myhero.Position) > 399 && target.Distance(myhero.Position) < 799 && DemSpells.E.Name == "FizzJump" &&
+                                 DemSpells.E.Cast(myhero.Position.Extend(target.Position, (target.Distance(myhero.Position) / 2)).To3D()))
                         {
-                            DemSpells.E.Cast(myhero.Position.Extend(target.Position, (target.Distance(myhero.Position) / 2)).To3D());
-                            DemSpells.E.Cast(target.Position);
-                            DemSpells.W.Cast();
+                            if(DemSpells.E.Cast(target.Position))
+                                 DemSpells.W.Cast();
                         }
                     }
                     break;
@@ -219,6 +357,16 @@ namespace T7_Fizz
                         switch (target.Distance(myhero.Position) < 400)
                         {
                             case true:
+                               /* if (DemSpells.E.Cast(target.Position))
+                                {
+                                    if (DemSpells.E.Cast(target.Position))
+                                    {
+                                        if (DemSpells.Q.Cast(target))
+                                        {
+                                            DemSpells.W.Cast();
+                                        }
+                                    }
+                                }*/
                                 CastE(target);
                                 if (DemSpells.Q.Cast(target))
                                 {
@@ -228,6 +376,16 @@ namespace T7_Fizz
                             case false:
                                 if (target.Distance(myhero.Position) > 400 && target.Distance(myhero.Position) < 799)
                                 {
+                                  /*  if (DemSpells.E.Cast(myhero.Position.Extend(target.Position, (target.Distance(myhero.Position) / 2)).To3D()))
+                                    {
+                                        if (DemSpells.E.Cast(target.Position))
+                                        {
+                                            if (DemSpells.Q.Cast(target))
+                                            {
+                                                DemSpells.W.Cast();
+                                            }
+                                        }
+                                    }*/
                                     CastE(target);
                                     if (DemSpells.Q.Cast(target))
                                     {
@@ -267,21 +425,14 @@ namespace T7_Fizz
                     target.IsValidTarget(DemSpells.R.Range - 10) && 
                     (ComboDamage(target) > target.Health || (ComboDamage(target) + myhero.GetSummonerSpellDamage(target, DamageLibrary.SummonerSpells.Ignite) > target.Health && ignt.IsReady())))
                 {
-                    var Rpred = DemSpells.R.GetPrediction(target);
-
-                    if (Rpred.HitChancePercent >= slider(pred, "Rpred") &&
-                        Rpred.CollisionObjects.Where(x => x is AIHeroClient || x.Name.ToLower().Contains("yasuo")).Count() == 0 &&
-                        DemSpells.R.Cast(Rpred.CastPosition))
-                    {
-                        MainCombo(target);
-                    }
+                    MainCombo(target);
                 }
                 else
                 {
                     if (check(combo, "CQ") && check(combo, "CW") && check(combo, "CE") && target.IsValidTarget(-5 + DemSpells.E.Range * 2) &&
                             DemSpells.Q.IsReady() && DemSpells.W.IsReady() && DemSpells.E.IsReady() && GetManaCost('Q', 'W', 'E') <= myhero.Mana)
                     {
-                        MainCombo(target);
+                        QWECombo(target);
                     }
                     else if (check(combo, "CQ") && check(combo, "CE") && target.IsValidTarget(-5 + DemSpells.E.Range * 2) && !target.HasUndyingBuff() &&
                             DemSpells.Q.IsReady() && DemSpells.E.IsReady() && GetManaCost('Q', 'E') <= myhero.Mana)
@@ -360,13 +511,33 @@ namespace T7_Fizz
 
                         if (check(combo, "CE") && DemSpells.E.IsReady() && target.IsValidTarget(-10 + DemSpells.E.Range * 2))
                         {
+                           /* switch(target.Distance(myhero.Position) < 400)
+                            {
+                                case true:
+                                    if (DemSpells.E.Cast(target.Position))
+                                    {
+                                        return;
+                                    }
+                                    break;
+                                case false:
+                                    if (DemSpells.E.Cast(myhero.Position.Extend(target.Position, target.Distance(myhero.Position) / 2).To3D()))
+                                    {
+                                        if (DemSpells.E.Cast(target.Position))
+                                        {
+                                            return;
+                                        }
+                                    }
+                                    break;
+                            }*/
                             CastE(target);
                         }
 
                         if (check(combo, "CR") && DemSpells.R.IsReady() && target.IsValidTarget(DemSpells.R.Range - 30) && !target.IsInvulnerable && !target.HasUndyingBuff()
                             && RDamage(target) > target.TotalShieldHealth())
                         {
-                            var Rpred = DemSpells.R.GetPrediction(target);
+                            RDATA.Target = target;
+
+                            var Rpred = Prediction.Manager.GetPrediction(RDATA);
 
                             if ((ComboDamage(target) - RDamage(target) > target.Health && DemSpells.Q.IsInRange(target.Position)) || (target.Health < myhero.Health && DemSpells.W.IsInRange(target)))
                             {
@@ -386,21 +557,23 @@ namespace T7_Fizz
 
         private static void CastE(AIHeroClient target)
         {
-            var Epred = DemSpells.E.GetPrediction(target);
+            EDATA.Target = target;
+
+            var Epred = Prediction.Manager.GetPrediction(EDATA);
 
             if (Epred.HitChancePercent >= slider(pred, "EPred"))
             {
                 switch (target.Distance(myhero.Position) < 400)
                 {
                     case true:
-                        if (DemSpells.E.Cast(Epred.CastPosition))
+                        if (DemSpells.E.Name == "FizzJump" && DemSpells.E.Cast(Epred.CastPosition))
                         {
-                            return;
+                            if (DemSpells.E.Cast(target.Position)) return;
                         }
                         break;
                     case false:
 
-                        if (DemSpells.E.Cast(myhero.Position.Extend(Epred.CastPosition, DemSpells.E.Range - 1).To3D()))
+                        if (DemSpells.E.Name == "FizzJump" && DemSpells.E.Cast(myhero.Position.Extend(Epred.CastPosition, DemSpells.E.Range - 1).To3D()))
                         {
                             if (DemSpells.E.Cast(Epred.CastPosition))
                             {
@@ -426,6 +599,70 @@ namespace T7_Fizz
                 {
                     CastE(target);
                 }
+               /* if (check(harass, "HEQ") && DemSpells.Q.IsReady() && DemSpells.E.IsReady()/* && target.IsValidTarget(-1 + DemSpells.E.Range * 2) &&
+                    GetManaCost('Q','E') <= myhero.Mana)
+                {
+                    if (target.IsValidTarget(DemSpells.Q.Range))
+                    {
+                        if (DemSpells.Q.Cast(target))
+                        {
+                            if (LastHarassPos == null)
+                            {
+                                LastHarassPos = myhero.ServerPosition;
+                            }
+
+                            if (JumpBack)
+                            {
+                                DemSpells.E.Cast((Vector3)LastHarassPos);
+                            }
+                        }
+                    } 
+                   /* switch(comb(harass, "HEQMODES"))
+                    {
+                        case 0:
+                            switch (pred.Distance(myhero.Position) <= 380)
+                            {
+                                case true:
+                                    if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), DemSpells.E.Range - 50).To3D()))
+                                    {
+                                        if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), pred.Distance(myhero.Position) + 20).To3D()))
+                                        {
+                                            DemSpells.Q.Cast(target);
+                                        }
+                                    }
+                                    break;
+                                case false:
+                                    if (pred.Distance(myhero.Position) <= 780)
+                                    {
+                                        if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), DemSpells.E.Range - 1).To3D()))
+                                        {
+                                            if (DemSpells.E.Cast(myhero.Position.Extend(pred.To3D(), DemSpells.E.Range - 1).To3D()))
+                                            {
+                                                DemSpells.Q.Cast(target);
+                                            }
+                                        }
+                                    }
+                                    break;
+                            } 
+                            break;
+                        case 1:
+                            if (target.IsValidTarget(DemSpells.Q.Range))
+                            {
+                                if (DemSpells.Q.Cast(target))
+                                {
+                                    if (LastHarassPos == null)
+                                    {
+                                        LastHarassPos = myhero.ServerPosition;
+                                    }
+
+                                    if (JumpBack)
+                                    {
+                                        DemSpells.E.Cast((Vector3)LastHarassPos);
+                                    }
+                                }
+                            }                            
+                            break;
+                    }  */ 
                 if (check(harass, "HW") && DemSpells.W.IsReady() && myhero.CountEnemiesInRange(DemSpells.W.Range) >= slider(harass, "HWMIN"))
                 {
                     DemSpells.W.Cast();
@@ -637,7 +874,10 @@ namespace T7_Fizz
             {
                 Core.DelayAction(() => BlockE(), 700);
             }
-
+          /*  if (unit.ChampionName.Equals("Blitzcrank") && args.Slot == SpellSlot.Q)
+            {
+                Core.DelayAction(() => BlockE(), 250);
+            }*/
             if (unit.ChampionName.Equals("Malphite") && args.Slot == SpellSlot.R && myhero.Position.Distance(args.End) < 300)
             {
                 Core.DelayAction(() => BlockE(),
@@ -922,8 +1162,12 @@ namespace T7_Fizz
             combo.Add("CR", new CheckBox("Use R", true));
             combo.AddSeparator();
             combo.Add("CIGNT", new CheckBox("Use Ignite", false));
-            
+       //     combo.Add("EGAP", new CheckBox("Use E To Gapclose if enemy out of range", true));
+
             harass.AddLabel("Spells");
+      //      harass.Add("HEQ", new CheckBox("Use Q + E Combo", true));
+      //      harass.Add("HMODE", new ComboBox("Harass Mode", 0, "Use All Spells Separately", "Only Q + E Combo"));
+     //       harass.Add("HEQMODES", new ComboBox("Select EQ Combo", 1, "Attack With W + Q To Escape", "Attack With Q + W To Escape"));
             harass.Add("HQ", new CheckBox("Use W", true));
             harass.AddSeparator();
             harass.Add("HW", new CheckBox("Use W", true));
