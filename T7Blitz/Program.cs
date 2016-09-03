@@ -116,7 +116,6 @@ namespace T7_Blitz
 
             DatMenu();
             CheckPrediction();
-            Chat.Print(myhero.Level);
         }
 
         private static void OnTick(EventArgs args)
