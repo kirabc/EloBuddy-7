@@ -33,6 +33,8 @@ namespace ToxicBuddy
             {
                 TeamToxicCount.Add(mate.ChampionName, 0);
             }
+            
+            menu["DISABLE"].Cast<CheckBox>().CurrentValue = false;
         }
 
         private static void OnTick(EventArgs args)
@@ -49,7 +51,7 @@ namespace ToxicBuddy
 
         private static void OnInput(ChatInputEventArgs args)
         {
-            if (menu["DISABLE"].Cast<CheckBox>().CurrentValue)
+            if (Disabled)
             {
                 args.Process = false;
                 Chat.Print("Your Chat Is Permanently Disabled!");
