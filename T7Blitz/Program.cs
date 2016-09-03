@@ -28,14 +28,14 @@ namespace T7_Blitz
             Range = DemSpells.Q.Range,
             Speed = DemSpells.Q.Speed,
             Type = SkillShotType.Linear,
-           /* CollisionTypes = { EloBuddy.SDK.Spells.CollisionType.AiHeroClient,
+            CollisionTypes = { EloBuddy.SDK.Spells.CollisionType.AiHeroClient,
                                EloBuddy.SDK.Spells.CollisionType.ObjAiMinion,
-                               EloBuddy.SDK.Spells.CollisionType.YasuoWall }*/
+                               EloBuddy.SDK.Spells.CollisionType.YasuoWall }
         };
 
         static readonly string ChampionName = "Blitzcrank";
         static readonly string Version = "1.0";
-        static readonly string Date = "3/8/16";
+        static readonly string Date = "3/9/16";
         
 
         public static Item Potion { get; private set; }
@@ -228,7 +228,8 @@ namespace T7_Blitz
                           CollisionTypes = { EloBuddy.SDK.Spells.CollisionType.YasuoWall }
                       });*/
 
-                    var qpred = DemSpells.Q.GetPrediction(target);
+                    QDATA.Target = target;
+                    var qpred = Prediction.Manager.GetPrediction(QDATA);
 
                     if (check(draw, "DRAWPRED"))
                     {
@@ -290,7 +291,8 @@ namespace T7_Blitz
                             Target = target,
                             CollisionTypes = { EloBuddy.SDK.Spells.CollisionType.YasuoWall }
                         });*/
-                    var Qpred = DemSpells.Q.GetPrediction(target);
+                    QDATA.Target = target;
+                    var Qpred = Prediction.Manager.GetPrediction(QDATA);
 
                     if (Qpred.HitChancePercent >= slider(qsett, "QPRED") && DemSpells.Q.Cast(Qpred.CastPosition))
                     {
@@ -327,7 +329,7 @@ namespace T7_Blitz
             {
                 if (check(harass, "HQ") && DemSpells.Q.IsReady() && check(qsett, "Q" + target.ChampionName))
                 {
-                    Prediction.Manager.PredictionOutput Qpred = Prediction.Manager.GetPrediction(new Prediction.Manager.PredictionInput
+                   /* Prediction.Manager.PredictionOutput Qpred = Prediction.Manager.GetPrediction(new Prediction.Manager.PredictionInput
                     {
                         Delay = DemSpells.Q.CastDelay,
                         Radius = DemSpells.Q.Radius,
@@ -339,7 +341,10 @@ namespace T7_Blitz
                         CollisionTypes = { EloBuddy.SDK.Spells.CollisionType.YasuoWall,
                                            EloBuddy.SDK.Spells.CollisionType.ObjAiMinion,
                                            EloBuddy.SDK.Spells.CollisionType.AiHeroClient }
-                    });
+                    });*/
+                    
+                    QDATA.Target = target;
+                    var Qpred = Prediction.Manager.GetPrediction(QDATA);
 
                     if (Qpred.HitChancePercent >= slider(qsett, "QPRED") && DemSpells.Q.Cast(Qpred.CastPosition))
                     {
@@ -371,9 +376,9 @@ namespace T7_Blitz
                     {
                         QDATA.Target = minion;
 
-                        Prediction.Manager.PredictionOutput epred = Prediction.Manager.GetPrediction(QDATA);
+                        Prediction.Manager.PredictionOutput qpred = Prediction.Manager.GetPrediction(QDATA);
 
-                        if (epred.HitChancePercent >= slider(qsett, "QPRED") && DemSpells.Q.Cast(epred.CastPosition))
+                        if (qpred.HitChancePercent >= slider(qsett, "QPRED") && DemSpells.Q.Cast(qpred.CastPosition))
                         {
                             return;
                         }
@@ -462,11 +467,9 @@ namespace T7_Blitz
 
             if (Qtarget != null && Qtarget.ValidTarget((int)DemSpells.Q.Range) && key(qsett, "FORCEQ") && DemSpells.Q.IsReady() && check(qsett, "Q" + Qtarget.ChampionName))
             {
-                //QDATA.Target = Qtarget;
+                QDATA.Target = Qtarget;
 
-                //Prediction.Manager.PredictionOutput Qpred = Prediction.Manager.GetPrediction(QDATA);
-
-                var Qpred = DemSpells.Q.GetPrediction(Qtarget);
+                Prediction.Manager.PredictionOutput Qpred = Prediction.Manager.GetPrediction(QDATA);
 
                 if (DemSpells.Q.Cast(Qpred.CastPosition))
                 {
