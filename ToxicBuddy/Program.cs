@@ -51,8 +51,8 @@ namespace ToxicBuddy
         {
             if (Disabled == true)
             {
-                Chat.Print("Your Chat Is Permanently Disabled!");
                 args.Process = false;
+                Chat.Print("Your Chat Is Permanently Disabled!");
                 return;
             }
 
@@ -161,7 +161,19 @@ namespace ToxicBuddy
             menu.Add("MUTE", new KeyBind("Mute Teammates Forever!!!!11",false, KeyBind.BindTypes.PressToggle, 'M'));
             menu.AddLabel("Can Only Be Used Once ^^^");
             menu.AddSeparator();
-            menu.Add("DISABLE", new CheckBox("Permanently Disable Chat",false));
+            menu.Add("DISABLE", new CheckBox("Permanently Disable Chat",false)).OnValueChange += 
+                delegate (ValueBase<bool> sender, ValueBase<bool>.ValueChangeArgs args)
+                {
+                    if (args.NewValue == true)
+                    {
+                        sender.CurrentValue = false;
+                        return;
+                    }
+                    else
+                    {
+                        return;
+                    }
+                };
             menu.AddLabel("WARNING! CANNOT BE UNDONE ^^^");
         }
     }
