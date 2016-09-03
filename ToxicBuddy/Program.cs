@@ -49,11 +49,10 @@ namespace ToxicBuddy
 
         private static void OnInput(ChatInputEventArgs args)
         {
-            if (Disabled == true)
+            if (menu["DISABLE"].Cast<CheckBox>().CurrentValue)
             {
                 args.Process = false;
                 Chat.Print("Your Chat Is Permanently Disabled!");
-                return;
             }
 
             var msg = args.Input;
@@ -164,10 +163,9 @@ namespace ToxicBuddy
             menu.Add("DISABLE", new CheckBox("Permanently Disable Chat",false)).OnValueChange += 
                 delegate (ValueBase<bool> sender, ValueBase<bool>.ValueChangeArgs args)
                 {
-                    if (args.NewValue == true)
+                    if (args.NewValue == false)
                     {
-                        sender.CurrentValue = false;
-                        return;
+                        sender.CurrentValue = true;
                     }
                     else
                     {
