@@ -150,52 +150,15 @@ namespace T7_Blitz
         {
             if (!sender.IsMe || !check(misc, "autolevel")) return;
 
-            //var U = SpellSlot.Unknown;
-            //var Q = SpellSlot.Q;
-            //var W = SpellSlot.W;
-            //var E = SpellSlot.E;
-            //var R = SpellSlot.R;
+            var U = SpellSlot.Unknown;
+            var Q = SpellSlot.Q;
+            var W = SpellSlot.W;
+            var E = SpellSlot.E;
+            var R = SpellSlot.R;
 
-
-            Core.DelayAction(delegate
-            {
-                if (myhero.Level > 1 && myhero.Level < 4)
-                {
-                    switch (myhero.Level)
-                    {
-                        case 2:
-                            Player.LevelSpell(SpellSlot.W);
-                            break;
-                        case 3:
-                            Player.LevelSpell(SpellSlot.E);
-                            break;
-                    }
-                }
-                else if (myhero.Level >= 4)
-                {
-                    if (myhero.Spellbook.CanSpellBeUpgraded(SpellSlot.R) && Player.LevelSpell(SpellSlot.R))
-                    {
-                        return;
-                    }
-                    else if (myhero.Spellbook.CanSpellBeUpgraded(SpellSlot.Q) && Player.LevelSpell(SpellSlot.Q))
-                    {
-                        return;
-                    }
-                    else if (myhero.Spellbook.CanSpellBeUpgraded(SpellSlot.E) && Player.LevelSpell(SpellSlot.E))
-                    {
-                        return;
-                    }
-                    else if (myhero.Spellbook.CanSpellBeUpgraded(SpellSlot.W) && Player.LevelSpell(SpellSlot.W))
-                    {
-                        return;
-                    }
-                }
-            }, 1000);
-            ///*>>*/
-            //SpellSlot[] sequence1 = { U, E, W, Q, Q, R, Q, E, W, Q, R, E, E, E, W, R, W, W, U };
+            SpellSlot[] sequence1 = { U, E, W, Q, Q, R, Q, E, W, Q, R, E, E, E, W, R, W, W, U };
             
-
-            //Player.LevelSpell(sequence1[myhero.Level]);
+            Core.DelayAction(() => Player.LevelSpell(sequence1[myhero.Level]), 1000);
         }
         
         private static void OnDraw(EventArgs args)
