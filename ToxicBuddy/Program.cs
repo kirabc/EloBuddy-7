@@ -162,7 +162,7 @@ namespace ToxicBuddy
             menu.Add("MUTE", new KeyBind("Mute Teammates Forever!!!!11",false, KeyBind.BindTypes.PressToggle, 'M'));
             menu.AddLabel("Can Only Be Used Once ^^^");
             menu.AddSeparator();
-            menu.Add("DISABLE", new CheckBox("Permanently Disable Chat",false)).OnValueChange += 
+            menu.Add("DISABLE", new CheckBox("Permanently Disable Chat",false));/*.OnValueChange += 
                 delegate (ValueBase<bool> sender, ValueBase<bool>.ValueChangeArgs args)
                 {
                     if (args.NewValue == false)
@@ -173,7 +173,7 @@ namespace ToxicBuddy
                     {
                         return;
                     }
-                };
+                };*/
             menu.AddLabel("WARNING! CANNOT BE UNDONE ^^^");
         }
     }
