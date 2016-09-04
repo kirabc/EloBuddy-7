@@ -23,8 +23,8 @@ namespace T7_Blitz
 
         private static Prediction.Manager.PredictionInput QDATA = new Prediction.Manager.PredictionInput
         {
-            Delay = DemSpells.Q.CastDelay,
-            Radius = DemSpells.Q.Radius,
+            Delay = 0.25f,
+            Radius = DemSpells.Q.Width,
             Range = DemSpells.Q.Range,
             Speed = DemSpells.Q.Speed,
             Type = SkillShotType.Linear,
