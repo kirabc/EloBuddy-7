@@ -452,9 +452,10 @@ namespace T7_Veigar_V2
                     if (Wpred.RealHitChancePercent >= slider(pred, "WPred") && DemSpells.Q.Cast(Wpred.CastPosition)) return;
                 }
 
-                if (check(misc, "KSR") && DemSpells.R.CanCast(target) && RDamage(target) > target.Health &&
-                    Prediction.Health.GetPrediction(target, 200) > 0 && !target.HasBuff("bansheesveil") && !target.HasBuff("fioraw") && DemSpells.R.Cast(target))
+                if (check(misc, "KSR") && DemSpells.R.IsReady() && DemSpells.R.CanCast(target) && RDamage(target) > target.Health &&
+                    Prediction.Health.GetPrediction(target, 200) > 0 && !target.HasBuff("bansheesveil") && !target.HasBuff("fioraw"))
                 {
+                    DemSpells.R.Cast(target);
                     return;
                 }
 
